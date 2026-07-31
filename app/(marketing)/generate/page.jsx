@@ -4,7 +4,7 @@ import { QrIcon } from "@/components/icons";
 import { DEFAULT_PRODUCT_SLUG } from "@/lib/products";
 import { listProducts } from "@/lib/catalogue";
 
-export default async function GeneratePage() {
+export default async function GeneratePage({ searchParams }) {
   const session = await verifySession();
   const user = await getCurrentUser();
 
@@ -52,7 +52,11 @@ export default async function GeneratePage() {
           </p>
         </div>
 
-        <GenerateForm initialCustomer={{ name: user?.name ?? "", phone: session.phone ?? "" }} />
+        <GenerateForm
+          initialCustomer={{ name: user?.name ?? "", phone: session.phone ?? "" }}
+          product={selected}
+          products={products}
+        />
       </div>
     </div>
   );
