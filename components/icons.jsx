@@ -79,3 +79,49 @@ export function TagIcon({ className }) {
     </svg>
   );
 }
+
+// Brand mark: a tag with two broadcast arcs — "your tag, reachable".
+// Draw on a solid box; the punch-hole should match the box's background color.
+export function ReachIcon({ className, holeClassName = "fill-black" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className}>
+      <path
+        d="M11.3 3.4H5.6a2 2 0 00-2 2v5.7c0 .4.16.78.44 1.06l9.6 9.6a1.7 1.7 0 002.4 0l5.66-5.66a1.7 1.7 0 000-2.4l-9.6-9.6a1.5 1.5 0 00-1.06-.44z"
+        fill="currentColor"
+      />
+      <circle cx="8.2" cy="8.2" r="1.5" className={holeClassName} />
+      <path
+        d="M15.3 3.9c1.9.4 3.5 2 3.9 3.9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M16.9 1.4c2.9.6 5.2 2.9 5.8 5.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+// Simple generic car-side-view glyph, used for the vehicle-tag motif.
+export function CarIcon({ className }) {
+  return (
+    <svg viewBox="0 0 48 24" className={className} fill="none">
+      <path
+        d="M2 17.5h2M44 17.5h1.5a1.5 1.5 0 001.5-1.5v-2.3a2 2 0 00-.7-1.52l-5.6-4.8A4 4 0 0030.5 6h-15a4 4 0 00-2.98 1.33L8.6 11.5H4a2 2 0 00-2 2v2.5a2 2 0 002 2h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M8 11.5h30" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="14" cy="17.5" r="3" fill="currentColor" />
+      <circle cx="35" cy="17.5" r="3" fill="currentColor" />
+    </svg>
+  );
+}

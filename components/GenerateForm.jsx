@@ -1,19 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Script from "next/script";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { emptyCustomer } from "@/lib/customer";
+import { composeTagCard, TAG_CARD_ASPECT } from "@/lib/tagCard";
 import { CustomerForm } from "@/components/CustomerForm";
-import { formatInr, isFree } from "@/lib/products";
+import { StepLabel } from "@/components/StepLabel";
+import { QrIcon } from "@/components/icons";
 
-const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
-
-// `products` comes from the server so the picker always shows current prices.
-// The price shown here is display only — the server re-prices every order.
-export function GenerateForm({ product: initialProduct, products }) {
-  const [product, setProduct] = useState(initialProduct);
-  const [customer, setCustomer] = useState(emptyCustomer);
+export function GenerateForm({ initialCustomer }) {
+  const [customer, setCustomer] = useState({ ...emptyCustomer, ...initialCustomer });
   const [submitting, setSubmitting] = useState(false);
   const [checkoutReady, setCheckoutReady] = useState(false);
   const [error, setError] = useState(null);
@@ -58,150 +55,100 @@ export function GenerateForm({ product: initialProduct, products }) {
         await showTag(code);
         return;
       }
-      await startPayment();
+      const { code } = await res.json();
+      const url = `${window.location.origin}/t/${code}`;
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        width: 320,
+      });
+      const cardDataUrl = await composeTagCard({ qrDataUrl, code });
+      setResult({ code, url, qrDataUrl, cardDataUrl });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setSubmitting(false);
     }
   }
 
-  async function startPayment() {
-    const order = await issueTag("/api/orders", { product: product.slug, customer });
-
-    const rzp = new window.Razorpay({
-      key: order.keyId,
-      order_id: order.orderId,
-      amount: order.amountPaise,
-      currency: order.currency,
-      name: "Reach-Out",
-      description: order.product.name,
-      prefill: { name: customer.name, contact: customer.phone, email: customer.email || undefined },
-      theme: { color: "#4f46e5" },
-      // The tag is only created once the server verifies Razorpay's signature.
-      handler: async (response) => {
-        try {
-          const { code } = await issueTag("/api/orders/verify", response);
-          await showTag(code);
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? `${err.message} Your payment reference is ${response.razorpay_payment_id}.`
-              : "Payment went through but the tag could not be issued."
-          );
-        } finally {
-          setSubmitting(false);
-        }
-      },
-      modal: {
-        ondismiss: () => {
-          setError("Payment cancelled — no tag was created and you weren't charged.");
-          setSubmitting(false);
-        },
-      },
-    });
-
-    rzp.on("payment.failed", (response) => {
-      setError(response?.error?.description ?? "The payment failed. You have not been charged.");
-      setSubmitting(false);
-    });
-
-    rzp.open();
-  }
-
   return (
-    <>
-      <Script
-        src={CHECKOUT_SRC}
-        onReady={() => setCheckoutReady(true)}
-        onError={() => setError("Could not load the payment window. Check your connection.")}
-      />
+    <div className="grid gap-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-black/5 sm:grid-cols-2 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col gap-4">
+        <StepLabel n={1}>Your details</StepLabel>
+        <p className="-mt-2 text-xs text-slate-400">
+          We&apos;ve filled in your name and phone from your account — edit them if this tag is
+          for someone else.
+        </p>
+        <CustomerForm value={customer} onChange={setCustomer} />
+        <button
+          onClick={handleGenerate}
+          disabled={!canGenerate || submitting}
+          className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-yellow-400 shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-md disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
+        >
+          {submitting ? "Generating…" : "Generate QR"}
+        </button>
+        {!canGenerate && (
+          <p className="text-xs text-slate-400">Name and phone number are required to continue.</p>
+        )}
+      </div>
 
-      <div className="grid gap-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-indigo-900/5 sm:grid-cols-2 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-slate-700 dark:text-slate-300">Tag type</span>
-            <div className="grid gap-2">
-              {products.map((p) => (
-                <label
-                  key={p.slug}
-                  className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 transition-colors ${
-                    p.slug === product.slug
-                      ? "border-indigo-400 bg-indigo-50/60 dark:border-indigo-600 dark:bg-indigo-950/40"
-                      : "border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600"
-                  }`}
-                >
-                  <span className="flex items-center gap-2.5">
-                    <input
-                      type="radio"
-                      name="product"
-                      value={p.slug}
-                      checked={p.slug === product.slug}
-                      disabled={submitting || Boolean(result)}
-                      onChange={() => {
-                        setProduct(p);
-                        setError(null);
-                      }}
-                      className="accent-indigo-600"
-                    />
-                    <span className="text-slate-900 dark:text-white">{p.name}</span>
-                  </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      isFree(p)
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-slate-600 dark:text-slate-300"
-                    }`}
-                  >
-                    {formatInr(p.pricePaise)}
-                  </span>
-                </label>
-              ))}
+      <div className="flex flex-col gap-4">
+        <StepLabel n={2}>Your QR code</StepLabel>
+        <div
+          className="flex w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60"
+          style={{ aspectRatio: TAG_CARD_ASPECT }}
+        >
+          {result ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={result.cardDataUrl}
+              alt={`Reach-Out tag card${customer.name ? ` for ${customer.name}` : ""}`}
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2 px-6 text-center">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
+                <QrIcon className="h-4.5 w-4.5" />
+              </span>
+              <p className="text-sm text-slate-400">
+                {error ?? "Fill in step 1, then generate — your printable tag card will appear here."}
+              </p>
             </div>
-          </div>
-
-          <CustomerForm value={customer} onChange={setCustomer} disabledFields={Boolean(result)} />
-
-          {!result && (
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/25 transition-transform hover:-translate-y-0.5 hover:shadow-md disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
-            >
-              {submitting
-                ? free
-                  ? "Generating…"
-                  : "Opening payment…"
-                : free
-                  ? "Generate free eTag"
-                  : `Pay ${formatInr(product.pricePaise)} & get tag`}
-            </button>
-          )}
-
-          {!free && !result && (
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Payments are handled by Razorpay. Your tag is created only after the payment is
-              confirmed.
-            </p>
           )}
         </div>
-
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex aspect-square w-full max-w-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60">
-            {result ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={result.qrDataUrl}
-                alt="Customer QR code"
-                className="h-full w-full rounded-xl"
-              />
-            ) : (
-              <p className="px-6 text-center text-sm text-slate-400">
-                {error ??
-                  (free
-                    ? "Enter at least a name and phone number, then generate your eTag."
-                    : `Enter at least a name and phone number, then pay ${formatInr(product.pricePaise)} to get your ${product.name}.`)}
+        {result && (
+          <div className="flex flex-col gap-4 text-center">
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Tag code{" "}
+                <span className="rounded-md bg-yellow-50 px-2 py-0.5 font-mono font-medium text-amber-800 dark:bg-yellow-500/10 dark:text-yellow-300">
+                  {result.code}
+                </span>
               </p>
-            )}
+              <a
+                href={result.cardDataUrl}
+                download={`${result.code}-tag.png`}
+                className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-yellow-400 shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-md"
+              >
+                Download tag card
+              </a>
+            </div>
+            <div className="rounded-xl bg-yellow-50 p-4 text-left text-xs text-amber-900 dark:bg-yellow-500/10 dark:text-yellow-200">
+              <p className="font-semibold">What&apos;s next</p>
+              <ul className="mt-1.5 list-inside list-disc space-y-1">
+                <li>Download it and print or stick it somewhere visible.</li>
+                <li>
+                  See what a scanner would see on{" "}
+                  <Link href={result.url} className="underline underline-offset-2">
+                    the contact card
+                  </Link>
+                  .
+                </li>
+                <li>
+                  Or head to <Link href="/scan" className="underline underline-offset-2">Scan a tag</Link> to try
+                  the full lookup flow.
+                </li>
+              </ul>
+            </div>
           </div>
           {result && (
             <div className="flex flex-col items-center gap-2 text-center">

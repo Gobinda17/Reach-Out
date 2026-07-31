@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 const fieldShellClass =
-  "rounded-xl border border-slate-200 bg-white text-slate-900 outline-none transition-colors focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus-within:border-indigo-500 dark:focus-within:ring-indigo-950";
+  "rounded-xl border border-slate-200 bg-white text-slate-900 outline-none transition-colors focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus-within:border-yellow-500 dark:focus-within:ring-yellow-500/20";
 
 const fieldClass = `${fieldShellClass} px-3.5 py-2.5`;
 
@@ -78,7 +78,7 @@ export function LoginForm() {
   return (
     <form
       onSubmit={step === "phone" ? handleRequestOtp : handleVerifyOtp}
-      className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-indigo-900/5 dark:border-slate-800 dark:bg-slate-900"
+      className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-black/5 dark:border-slate-800 dark:bg-slate-900"
     >
       {step === "phone" ? (
         <label className="flex flex-col gap-1.5 text-sm">
@@ -122,7 +122,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setStep("phone")}
-            className="self-start text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+            className="self-start text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-yellow-400"
           >
             Use a different number
           </button>
@@ -134,7 +134,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting || (step === "phone" && !fullPhone)}
-        className="rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/25 transition-transform hover:-translate-y-0.5 hover:shadow-md disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
+        className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-yellow-400 shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-md disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
       >
         {step === "phone"
           ? submitting

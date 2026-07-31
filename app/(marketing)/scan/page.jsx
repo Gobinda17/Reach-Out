@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
-import { emptyCustomer, extractTagCode } from "@/lib/customer";
-import { CustomerForm } from "@/components/CustomerForm";
-import { QrIcon } from "@/components/icons";
+import { extractTagCode } from "@/lib/customer";
+import { ContactOwnerForm } from "@/components/ContactOwnerForm";
+import { StepLabel } from "@/components/StepLabel";
+import { QrIcon, CameraIcon, ShieldIcon } from "@/components/icons";
 
 export default function ScanPage() {
   const videoRef = useRef(null);
@@ -17,7 +18,7 @@ export default function ScanPage() {
   const [cameraError, setCameraError] = useState(null);
   const [decodeError, setDecodeError] = useState(null);
   const [tagCode, setTagCode] = useState(null);
-  const [customer, setCustomer] = useState(null);
+  const [tagInfo, setTagInfo] = useState(null);
 
   const stopCamera = useCallback(() => {
     if (rafRef.current !== null) {
@@ -49,7 +50,7 @@ export default function ScanPage() {
         }
         const data = await res.json();
         setTagCode(code);
-        setCustomer({ ...emptyCustomer, ...data });
+        setTagInfo(data);
       } catch {
         setDecodeError("Could not reach the server to look up this tag.");
       } finally {
@@ -62,7 +63,7 @@ export default function ScanPage() {
   async function startCamera() {
     setCameraError(null);
     setDecodeError(null);
-    setCustomer(null);
+    setTagInfo(null);
     setTagCode(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -108,7 +109,7 @@ export default function ScanPage() {
     e.target.value = "";
     if (!file) return;
     setDecodeError(null);
-    setCustomer(null);
+    setTagInfo(null);
     setTagCode(null);
 
     const img = new Image();
@@ -143,25 +144,27 @@ export default function ScanPage() {
     <div className="relative overflow-hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-sky-100 to-indigo-100 opacity-70 blur-3xl dark:from-sky-950/30 dark:to-indigo-950/40"
+        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-yellow-100 to-amber-50 opacity-70 blur-3xl dark:from-yellow-500/10 dark:to-transparent"
       />
       <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
         <div className="flex flex-col gap-2">
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300">
+          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-amber-800 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-300">
             <QrIcon className="h-3.5 w-3.5" />
             Scan a tag
           </span>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            Look up a customer QR
+            Look up a tag
           </h1>
           <p className="max-w-lg text-sm text-slate-500 dark:text-slate-400">
-            Scan a previously generated tag with your camera, or upload an image of it, to fill
-            the customer details form below.
+            Scan a previously generated tag with your camera, or upload an image of it. You&apos;ll
+            see the same privacy-safe card a stranger would — no name or number, just a way to
+            message the owner.
           </p>
         </div>
 
-        <div className="grid gap-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-indigo-900/5 sm:grid-cols-2 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+        <div className="grid gap-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-black/5 sm:grid-cols-2 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-4">
+            <StepLabel n={1}>Scan or upload</StepLabel>
             <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60">
               <video
                 ref={videoRef}
@@ -170,9 +173,14 @@ export default function ScanPage() {
                 className={`h-full w-full object-cover ${scanning ? "block" : "hidden"}`}
               />
               {!scanning && (
-                <p className="px-6 text-center text-sm text-slate-400">
-                  {cameraError ?? "Start the camera or upload an image containing a QR code."}
-                </p>
+                <div className="flex flex-col items-center gap-2 px-6 text-center">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
+                    <CameraIcon className="h-4.5 w-4.5" />
+                  </span>
+                  <p className="text-sm text-slate-400">
+                    {cameraError ?? "Point your camera at a Reach-Out QR code, or upload a photo of one."}
+                  </p>
+                </div>
               )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
@@ -188,7 +196,7 @@ export default function ScanPage() {
               ) : (
                 <button
                   onClick={startCamera}
-                  className="rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/25 transition-transform hover:-translate-y-0.5 hover:shadow-md"
+                  className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-yellow-400 shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-md"
                 >
                   Start camera
                 </button>
@@ -202,21 +210,38 @@ export default function ScanPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {tagCode && (
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Tag code{" "}
-                <span className="rounded-md bg-indigo-50 px-2 py-0.5 font-mono font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-                  {tagCode}
-                </span>
-              </p>
+            <StepLabel n={2}>Contact card</StepLabel>
+            {tagCode && tagInfo && (
+              <div className="flex items-center gap-2 rounded-lg bg-yellow-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-yellow-500/10 dark:text-yellow-300">
+                <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
+                Tag found —{" "}
+                <span className="rounded bg-white/70 px-1.5 py-0.5 font-mono dark:bg-black/30">{tagCode}</span>
+              </div>
             )}
-            {customer ? (
-              <CustomerForm value={customer} onChange={setCustomer} />
+            {tagInfo ? (
+              <div className="flex flex-col gap-3">
+                {(tagInfo.vehicleReg || tagInfo.vehicleMakeModel) && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-800/60">
+                    {tagInfo.vehicleReg && (
+                      <p className="font-medium tracking-widest text-slate-700 dark:text-slate-200">
+                        {tagInfo.vehicleReg}
+                      </p>
+                    )}
+                    {tagInfo.vehicleMakeModel && (
+                      <p className="text-slate-500 dark:text-slate-400">{tagInfo.vehicleMakeModel}</p>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs text-slate-400">
+                  The owner&apos;s name and phone number are never shown — not even here.
+                </p>
+                <ContactOwnerForm code={tagCode} />
+              </div>
             ) : (
               <p className="text-sm text-slate-400">
                 {lookingUp
                   ? "Looking up this tag…"
-                  : "Decoded customer details will appear here once a QR code is scanned."}
+                  : "Once step 1 finds a tag, its contact card will appear here."}
               </p>
             )}
           </div>

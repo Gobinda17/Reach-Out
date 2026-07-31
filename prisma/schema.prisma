@@ -81,30 +81,22 @@ model Tag {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  order Order?
+  messages ScanMessage[]
 
   @@map("tags")
 }
 
-// A paid tag purchase. The customer's details are parked in `customerData` at
-// checkout time and only become a real Tag once Razorpay's signature verifies —
-// so an abandoned or failed payment never produces a tag.
-model Order {
-  id                Int         @id @default(autoincrement())
-  userId            Int
-  user              User        @relation(fields: [userId], references: [id])
-  product           String
-  amountPaise       Int
-  currency          String      @default("INR")
-  status            OrderStatus @default(CREATED)
-  razorpayOrderId   String      @unique
-  razorpayPaymentId String?
-  customerData      Json
-  tagId             Int?        @unique
-  tag               Tag?        @relation(fields: [tagId], references: [id])
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+// A message left by someone who scanned a tag — lets them reach the owner
+// without the owner's name, phone, or any other detail ever being shown to them.
+model ScanMessage {
+  id        Int      @id @default(autoincrement())
+  tagId     Int
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  message   String
+  fromName  String?
+  fromPhone String?
+  createdAt DateTime @default(now())
 
-  @@index([userId, status])
-  @@map("orders")
+  @@index([tagId, createdAt])
+  @@map("scan_messages")
 }

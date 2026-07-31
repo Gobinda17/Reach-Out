@@ -26,10 +26,10 @@ export default function AboutPage() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-40 left-1/2 h-[30rem] w-[54rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-200 via-violet-200 to-sky-200 opacity-60 blur-3xl dark:from-indigo-900/40 dark:via-violet-900/30 dark:to-sky-900/30"
+          className="pointer-events-none absolute -top-40 left-1/2 h-[30rem] w-[54rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-yellow-200 via-amber-100 to-yellow-50 opacity-60 blur-3xl dark:from-yellow-500/10 dark:via-amber-500/5 dark:to-transparent"
         />
         <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-6 py-24 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300">
+          <span className="inline-flex items-center gap-2 rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-amber-800 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-300">
             <ShieldIcon className="h-3.5 w-3.5" />
             About Reach-Out
           </span>
@@ -71,7 +71,7 @@ export default function AboutPage() {
           <div className="mt-14 grid gap-10 sm:grid-cols-3">
             {PRINCIPLES.map((p) => (
               <div key={p.title} className="flex flex-col items-start gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-600/20">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-yellow-400 shadow-md shadow-black/20">
                   <p.icon className="h-6 w-6" />
                 </span>
                 <h3 className="text-lg font-medium text-slate-900 dark:text-white">{p.title}</h3>
@@ -84,8 +84,8 @@ export default function AboutPage() {
 
       {/* Where we are today */}
       <section className="mx-auto w-full max-w-3xl px-6 py-16">
-        <div className="flex items-start gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-6 dark:border-indigo-900 dark:bg-indigo-950/30">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300">
+        <div className="flex items-start gap-4 rounded-2xl border border-yellow-200 bg-yellow-50/60 p-6 dark:border-yellow-500/20 dark:bg-yellow-500/5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-amber-700 dark:bg-yellow-500/15 dark:text-yellow-300">
             <BoltIcon className="h-5 w-5" />
           </span>
           <div>
@@ -103,25 +103,25 @@ export default function AboutPage() {
 
       {/* CTA */}
       <section className="px-6 pb-24">
-        <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center gap-4 overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 px-6 py-16 text-center shadow-xl shadow-indigo-900/20">
+        <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center gap-4 overflow-hidden rounded-3xl bg-black px-6 py-16 text-center shadow-xl shadow-black/20">
           <div
             aria-hidden
-            className="pointer-events-none absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-white/10 blur-2xl"
+            className="pointer-events-none absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-yellow-400/20 blur-2xl"
           />
           <h2 className="text-2xl font-semibold text-white">Give it a try</h2>
-          <p className="max-w-md text-sm text-indigo-100">
+          <p className="max-w-md text-sm text-slate-300">
             Generate a tag with your own details and see the whole loop for yourself.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link
               href="/generate"
-              className="rounded-full bg-white px-6 py-3 text-sm font-medium text-indigo-700 shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+              className="rounded-full bg-yellow-400 px-6 py-3 text-sm font-medium text-black shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-md"
             >
               Generate your QR →
             </Link>
             <Link
               href="/scan"
-              className="rounded-full border border-white/40 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              className="rounded-full border border-white/30 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
             >
               Scan a tag
             </Link>

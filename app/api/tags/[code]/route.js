@@ -12,13 +12,11 @@ export async function GET(_request, { params }) {
     return NextResponse.json({ error: "Tag not found" }, { status: 404 });
   }
 
+  // Public lookup — never return the owner's name, phone, email, address, or
+  // notes here. Only non-identifying vehicle context, so a scanner can
+  // confirm they're looking at the right tag without learning who owns it.
   return NextResponse.json({
-    name: tag.name,
-    phone: tag.phone,
-    email: tag.email ?? "",
     vehicleReg: tag.vehicleReg ?? "",
     vehicleMakeModel: tag.vehicleMakeModel ?? "",
-    address: tag.address ?? "",
-    notes: tag.notes ?? "",
   });
 }
