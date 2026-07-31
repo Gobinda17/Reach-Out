@@ -34,7 +34,7 @@ export default async function AdminUsersPage() {
                 <td className="px-4 py-3 font-mono text-slate-700 dark:text-slate-300">{u.phone}</td>
                 <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{u.name || "—"}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                  <span className="rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-yellow-500/10 dark:text-yellow-300">
                     {u.role}
                   </span>
                 </td>

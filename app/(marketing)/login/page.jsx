@@ -6,7 +6,7 @@ export default function LoginPage() {
     <div className="relative overflow-hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 opacity-70 blur-3xl dark:from-indigo-950/40 dark:to-violet-950/30"
+        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-yellow-100 to-amber-50 opacity-70 blur-3xl dark:from-yellow-500/10 dark:to-transparent"
       />
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-8 px-6 py-16">
         <div className="flex flex-col gap-2 text-center">

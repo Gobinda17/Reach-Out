@@ -55,5 +55,22 @@ model Tag {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  messages ScanMessage[]
+
   @@map("tags")
+}
+
+// A message left by someone who scanned a tag — lets them reach the owner
+// without the owner's name, phone, or any other detail ever being shown to them.
+model ScanMessage {
+  id        Int      @id @default(autoincrement())
+  tagId     Int
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  message   String
+  fromName  String?
+  fromPhone String?
+  createdAt DateTime @default(now())
+
+  @@index([tagId, createdAt])
+  @@map("scan_messages")
 }

@@ -1,19 +1,20 @@
-import { verifySession } from "@/lib/dal";
+import { verifySession, getCurrentUser } from "@/lib/dal";
 import { GenerateForm } from "@/components/GenerateForm";
 import { QrIcon } from "@/components/icons";
 
 export default async function GeneratePage() {
-  await verifySession();
+  const session = await verifySession();
+  const user = await getCurrentUser();
 
   return (
     <div className="relative overflow-hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 opacity-70 blur-3xl dark:from-indigo-950/40 dark:to-violet-950/30"
+        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-yellow-100 to-amber-50 opacity-70 blur-3xl dark:from-yellow-500/10 dark:to-transparent"
       />
       <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
         <div className="flex flex-col gap-2">
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300">
+          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-amber-800 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-300">
             <QrIcon className="h-3.5 w-3.5" />
             Generate a tag
           </span>
@@ -27,7 +28,7 @@ export default async function GeneratePage() {
           </p>
         </div>
 
-        <GenerateForm />
+        <GenerateForm initialCustomer={{ name: user?.name ?? "", phone: session.phone ?? "" }} />
       </div>
     </div>
   );
