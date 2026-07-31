@@ -16,7 +16,7 @@ export function UserMenu({ user }) {
     <div className="hidden items-center gap-3 text-sm sm:flex">
       {user.role === "ADMIN" && (
         <Link
-          href="/admin/users"
+          href="/admin"
           className="font-medium text-slate-600 transition-colors hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
         >
           Admin

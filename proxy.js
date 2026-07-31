@@ -14,7 +14,9 @@ export default async function proxy(request) {
 
   if (!session?.userId) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
+    // Keep the query string too — /generate?product=vehicle-tag must survive the
+    // login round trip, otherwise the chosen product is lost.
+    loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 

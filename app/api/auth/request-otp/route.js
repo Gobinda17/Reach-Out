@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { requestOtp, OtpRateLimitError } from "@/lib/otp";
-import { normalizeIndianPhone, INDIAN_PHONE_ERROR } from "@/lib/phone";
+import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 export async function POST(request) {
   const body = await request.json().catch(() => null);
-  const phone = normalizeIndianPhone(body?.phone);
+  const phone = normalizePhone(body?.phone);
 
   if (!phone) {
-    return NextResponse.json({ error: INDIAN_PHONE_ERROR }, { status: 400 });
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
   }
 
   try {

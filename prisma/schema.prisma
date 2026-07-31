@@ -13,6 +13,12 @@ enum Role {
   CUSTOMER
 }
 
+enum OrderStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   phone     String   @unique
@@ -21,7 +27,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tags Tag[]
+  tags   Tag[]
+  orders Order[]
 
   @@map("users")
 }
@@ -40,9 +47,28 @@ model Otp {
   @@map("otps")
 }
 
+// The tag catalogue. Prices are in paise so amounts stay integers all the way
+// through to Razorpay. Orders snapshot `amountPaise` at purchase time, so
+// changing a price here never rewrites what someone was already charged.
+model Product {
+  slug        String   @id
+  name        String
+  description String
+  pricePaise  Int
+  sortOrder   Int      @default(0)
+  // Retiring a product hides it from the storefront while keeping the name
+  // resolvable for orders and tags already sold under it.
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}
+
 model Tag {
   id               Int      @id @default(autoincrement())
   code             String   @unique
+  product          String   @default("free-etag")
   name             String
   phone            String
   email            String?
@@ -55,5 +81,30 @@ model Tag {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  order Order?
+
   @@map("tags")
+}
+
+// A paid tag purchase. The customer's details are parked in `customerData` at
+// checkout time and only become a real Tag once Razorpay's signature verifies —
+// so an abandoned or failed payment never produces a tag.
+model Order {
+  id                Int         @id @default(autoincrement())
+  userId            Int
+  user              User        @relation(fields: [userId], references: [id])
+  product           String
+  amountPaise       Int
+  currency          String      @default("INR")
+  status            OrderStatus @default(CREATED)
+  razorpayOrderId   String      @unique
+  razorpayPaymentId String?
+  customerData      Json
+  tagId             Int?        @unique
+  tag               Tag?        @relation(fields: [tagId], references: [id])
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId, status])
+  @@map("orders")
 }

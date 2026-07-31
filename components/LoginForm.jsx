@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { normalizeIndianPhone, INDIAN_PHONE_ERROR } from "@/lib/phone";
+import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 const fieldShellClass =
   "rounded-xl border border-slate-200 bg-white text-slate-900 outline-none transition-colors focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus-within:border-indigo-500 dark:focus-within:ring-indigo-950";
@@ -12,21 +12,28 @@ const fieldClass = `${fieldShellClass} px-3.5 py-2.5`;
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/generate";
+  // Only same-site paths — "//evil.com" and absolute URLs would otherwise turn
+  // this into an open redirect.
+  const requestedNext = searchParams.get("next");
+  const next =
+    requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
+      ? requestedNext
+      : "/generate";
 
   const [step, setStep] = useState("phone");
-  // 10 local digits only — the +91 country code is fixed.
+  // As typed. A bare 10-digit number is read as Indian; other countries need a
+  // country code. `fullPhone` is the normalized E.164 form actually sent.
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const fullPhone = normalizeIndianPhone(phone);
+  const fullPhone = normalizePhone(phone);
 
   async function handleRequestOtp(e) {
     e.preventDefault();
     if (!fullPhone) {
-      setError(INDIAN_PHONE_ERROR);
+      setError(PHONE_ERROR);
       return;
     }
     setSubmitting(true);
@@ -76,32 +83,28 @@ export function LoginForm() {
       {step === "phone" ? (
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-slate-700 dark:text-slate-300">Phone number</span>
-          <div className={`${fieldShellClass} flex items-center gap-2`}>
-            <span className="select-none border-r border-slate-200 py-2.5 pl-3.5 pr-2.5 text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              +91
-            </span>
-            <input
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel-national"
-              pattern="[6-9][0-9]{9}"
-              maxLength={10}
-              required
-              placeholder="98765 43210"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-              className="min-w-0 flex-1 bg-transparent py-2.5 pr-3.5 outline-none"
-            />
-          </div>
+          <input
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            maxLength={20}
+            required
+            placeholder="98765 43210 or +1 415 555 2671"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s()\-.]/g, ""))}
+            className={fieldClass}
+          />
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            Indian mobile numbers only.
+            {fullPhone
+              ? `We'll text ${fullPhone}.`
+              : "10 digits for India, or include a country code like +1 or +44."}
           </span>
         </label>
       ) : (
         <>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Enter the 6-digit code we sent to{" "}
-            <span className="font-medium text-slate-700 dark:text-slate-300">+91 {phone}</span>.
+            <span className="font-medium text-slate-700 dark:text-slate-300">{fullPhone}</span>.
           </p>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-slate-700 dark:text-slate-300">Verification code</span>

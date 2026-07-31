@@ -1,42 +1,37 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { generateTagCode } from "@/lib/tagCode";
 import { getCurrentUser } from "@/lib/dal";
+import { isFree, DEFAULT_PRODUCT_SLUG } from "@/lib/products";
+import { getPurchasableProduct } from "@/lib/catalogue";
+import { createTag } from "@/lib/tags";
 
+// Free tags only. Paid products must go through /api/orders → /api/orders/verify,
+// which issues the tag once Razorpay confirms the payment.
 export async function POST(request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "You need to log in first." }, { status: 401 });
   }
 
-  const body = await request.json();
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const phone = typeof body.phone === "string" ? body.phone.trim() : "";
+  const body = await request.json().catch(() => null);
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
 
   if (!name || !phone) {
     return NextResponse.json({ error: "name and phone are required" }, { status: 400 });
   }
 
-  let code = generateTagCode();
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const clash = await prisma.tag.findUnique({ where: { code } });
-    if (!clash) break;
-    code = generateTagCode();
+  const product = await getPurchasableProduct(body?.product ?? DEFAULT_PRODUCT_SLUG);
+  if (!product) {
+    return NextResponse.json({ error: "Unknown product." }, { status: 400 });
+  }
+  if (!isFree(product)) {
+    return NextResponse.json(
+      { error: `${product.name} is a paid tag — start a payment to get it.` },
+      { status: 402 }
+    );
   }
 
-  const tag = await prisma.tag.create({
-    data: {
-      code,
-      name,
-      phone,
-      email: body.email || null,
-      vehicleReg: body.vehicleReg || null,
-      vehicleMakeModel: body.vehicleMakeModel || null,
-      address: body.address || null,
-      notes: body.notes || null,
-      createdById: user.id,
-    },
-  });
+  const tag = await createTag({ customer: body, product: product.slug, userId: user.id });
 
   return NextResponse.json({ code: tag.code }, { status: 201 });
 }

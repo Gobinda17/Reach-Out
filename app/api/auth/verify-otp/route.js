@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { verifyOtp } from "@/lib/otp";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session";
-import { normalizeIndianPhone } from "@/lib/phone";
+import { normalizePhone } from "@/lib/phone";
 
 export async function POST(request) {
   const body = await request.json().catch(() => null);
-  const phone = normalizeIndianPhone(body?.phone);
+  const phone = normalizePhone(body?.phone);
   const code = typeof body?.code === "string" ? body.code.trim() : "";
 
   if (!phone || !/^\d{6}$/.test(code)) {

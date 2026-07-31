@@ -9,6 +9,8 @@ import {
   LayersIcon,
   TagIcon,
 } from "@/components/icons";
+import { formatInr, isFree, productColor } from "@/lib/products";
+import { listProducts } from "@/lib/catalogue";
 
 const STEPS = [
   {
@@ -25,29 +27,6 @@ const STEPS = [
     icon: ChatIcon,
     title: "Anyone can reach you",
     body: "Scan the tag with any phone camera to look up the contact card instantly. No app required.",
-  },
-];
-
-const PRODUCTS = [
-  {
-    name: "Vehicle Tag",
-    body: "A weatherproof QR sticker for your car or bike windshield.",
-    color: "from-indigo-500 to-indigo-600",
-  },
-  {
-    name: "Business Card",
-    body: "Share your contact details with a tap or a scan — no printing needed.",
-    color: "from-violet-500 to-violet-600",
-  },
-  {
-    name: "Door Tag",
-    body: "Let visitors reach you without ringing the bell or knowing your number.",
-    color: "from-sky-500 to-sky-600",
-  },
-  {
-    name: "Free eTag",
-    body: "Skip the sticker entirely — generate a digital QR you can share right away.",
-    color: "from-emerald-500 to-emerald-600",
   },
 ];
 
@@ -74,7 +53,9 @@ const VALUE_PROPS = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const products = await listProducts();
+
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -191,23 +172,36 @@ export default function Home() {
             </p>
           </div>
           <div className="mt-14 grid gap-5 sm:grid-cols-2">
-            {PRODUCTS.map((product) => (
+            {products.map((product) => (
               <Link
-                key={product.name}
-                href="/generate"
+                key={product.slug}
+                href={`/generate?product=${product.slug}`}
                 className="group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-6 text-left transition-all hover:-translate-y-1 hover:border-transparent hover:bg-white hover:shadow-xl hover:shadow-indigo-900/5 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-900"
               >
-                <span
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white ${product.color}`}
-                >
-                  <TagIcon className="h-5 w-5" />
+                <span className="flex items-start justify-between gap-3">
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white ${productColor(product.slug)}`}
+                  >
+                    <TagIcon className="h-5 w-5" />
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-sm font-medium ${
+                      isFree(product)
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                        : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    }`}
+                  >
+                    {formatInr(product.pricePaise)}
+                  </span>
                 </span>
                 <span className="text-lg font-medium text-slate-900 dark:text-white">
                   {product.name}
                 </span>
-                <span className="text-sm text-slate-500 dark:text-slate-400">{product.body}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {product.description}
+                </span>
                 <span className="mt-1 text-sm font-medium text-indigo-600 opacity-0 transition-opacity group-hover:opacity-100 dark:text-indigo-400">
-                  Get started →
+                  {isFree(product) ? "Get started →" : "Get your tag →"}
                 </span>
               </Link>
             ))}
