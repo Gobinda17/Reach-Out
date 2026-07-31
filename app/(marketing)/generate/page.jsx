@@ -2,17 +2,15 @@
 
 import { useState } from "react";
 import QRCode from "qrcode";
-import { Customer, emptyCustomer } from "@/lib/customer";
+import { emptyCustomer } from "@/lib/customer";
 import { CustomerForm } from "@/components/CustomerForm";
 import { QrIcon } from "@/components/icons";
 
 export default function GeneratePage() {
-  const [customer, setCustomer] = useState<Customer>(emptyCustomer);
+  const [customer, setCustomer] = useState(emptyCustomer);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ code: string; url: string; qrDataUrl: string } | null>(
-    null
-  );
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
 
   const canGenerate = customer.name.trim() !== "" && customer.phone.trim() !== "";
 

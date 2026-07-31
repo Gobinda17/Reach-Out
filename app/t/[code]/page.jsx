@@ -3,11 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { ShieldIcon } from "@/components/icons";
 
-export default async function TagPage({
-  params,
-}: {
-  params: Promise<{ code: string }>;
-}) {
+export default async function TagPage({ params }) {
   const { code } = await params;
 
   const tag = await prisma.tag.findUnique({
@@ -64,7 +60,7 @@ export default async function TagPage({
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value }) {
   return (
     <div className="flex justify-between gap-4 border-b border-slate-100 pb-2 last:border-0 last:pb-0 dark:border-slate-800">
       <span className="text-slate-500 dark:text-slate-400">{label}</span>

@@ -1,19 +1,11 @@
 "use client";
 
-import { Customer, CUSTOMER_FIELDS } from "@/lib/customer";
+import { CUSTOMER_FIELDS } from "@/lib/customer";
 
 const fieldClass =
   "rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-950 dark:disabled:bg-slate-800/60";
 
-export function CustomerForm({
-  value,
-  onChange,
-  disabledFields,
-}: {
-  value: Customer;
-  onChange: (next: Customer) => void;
-  disabledFields?: boolean;
-}) {
+export function CustomerForm({ value, onChange, disabledFields }) {
   return (
     <div className="flex flex-col gap-4">
       {CUSTOMER_FIELDS.map((field) => (

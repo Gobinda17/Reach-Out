@@ -1,15 +1,13 @@
-type IconProps = { className?: string };
-
 const base = {
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
   strokeWidth: 1.6,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
 };
 
-export function ShieldIcon({ className }: IconProps) {
+export function ShieldIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" />
@@ -18,7 +16,7 @@ export function ShieldIcon({ className }: IconProps) {
   );
 }
 
-export function QrIcon({ className }: IconProps) {
+export function QrIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <rect x="3.5" y="3.5" width="6" height="6" rx="1" />
@@ -29,7 +27,7 @@ export function QrIcon({ className }: IconProps) {
   );
 }
 
-export function UserIcon({ className }: IconProps) {
+export function UserIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <circle cx="12" cy="8" r="3.2" />
@@ -38,7 +36,7 @@ export function UserIcon({ className }: IconProps) {
   );
 }
 
-export function ChatIcon({ className }: IconProps) {
+export function ChatIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <path d="M4 5.5h16v10H9l-4 3.5v-3.5H4v-10z" />
@@ -46,7 +44,7 @@ export function ChatIcon({ className }: IconProps) {
   );
 }
 
-export function CameraIcon({ className }: IconProps) {
+export function CameraIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z" />
@@ -55,7 +53,7 @@ export function CameraIcon({ className }: IconProps) {
   );
 }
 
-export function BoltIcon({ className }: IconProps) {
+export function BoltIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <path d="M12.5 3L5 13.5h5.5L11 21l7.5-10.5H13L12.5 3z" />
@@ -63,7 +61,7 @@ export function BoltIcon({ className }: IconProps) {
   );
 }
 
-export function LayersIcon({ className }: IconProps) {
+export function LayersIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z" />
@@ -73,7 +71,7 @@ export function LayersIcon({ className }: IconProps) {
   );
 }
 
-export function TagIcon({ className }: IconProps) {
+export function TagIcon({ className }) {
   return (
     <svg {...base} className={className}>
       <path d="M11.5 3.5H5a1.5 1.5 0 00-1.5 1.5v6.5l10.5 10.5a1.5 1.5 0 002 0l6-6a1.5 1.5 0 000-2L11.5 3.5z" />

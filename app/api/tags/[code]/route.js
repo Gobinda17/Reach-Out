@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ code: string }> }
-) {
+export async function GET(_request, { params }) {
   const { code } = await params;
 
   const tag = await prisma.tag.findUnique({

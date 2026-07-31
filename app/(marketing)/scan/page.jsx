@@ -2,22 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
-import { Customer, emptyCustomer, extractTagCode } from "@/lib/customer";
+import { emptyCustomer, extractTagCode } from "@/lib/customer";
 import { CustomerForm } from "@/components/CustomerForm";
 import { QrIcon } from "@/components/icons";
 
 export default function ScanPage() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const rafRef = useRef(null);
 
   const [scanning, setScanning] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [decodeError, setDecodeError] = useState<string | null>(null);
-  const [tagCode, setTagCode] = useState<string | null>(null);
-  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [cameraError, setCameraError] = useState(null);
+  const [decodeError, setDecodeError] = useState(null);
+  const [tagCode, setTagCode] = useState(null);
+  const [customer, setCustomer] = useState(null);
 
   const stopCamera = useCallback(() => {
     if (rafRef.current !== null) {
@@ -32,7 +32,7 @@ export default function ScanPage() {
   useEffect(() => stopCamera, [stopCamera]);
 
   const handleDecoded = useCallback(
-    async (raw: string) => {
+    async (raw) => {
       const code = extractTagCode(raw);
       if (!code) {
         setDecodeError("This QR code isn't a Kavach tag QR code.");
@@ -103,7 +103,7 @@ export default function ScanPage() {
     }
   }
 
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileUpload(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
