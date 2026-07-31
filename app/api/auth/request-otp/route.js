@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { requestOtp, OtpRateLimitError } from "@/lib/otp";
-
-const E164 = /^\+[1-9]\d{7,14}$/;
+import { normalizeIndianPhone, INDIAN_PHONE_ERROR } from "@/lib/phone";
 
 export async function POST(request) {
   const body = await request.json().catch(() => null);
-  const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+  const phone = normalizeIndianPhone(body?.phone);
 
-  if (!E164.test(phone)) {
-    return NextResponse.json(
-      { error: "Enter a phone number in international format, e.g. +919876543210." },
-      { status: 400 }
-    );
+  if (!phone) {
+    return NextResponse.json({ error: INDIAN_PHONE_ERROR }, { status: 400 });
   }
 
   try {

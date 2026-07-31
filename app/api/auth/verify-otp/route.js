@@ -2,15 +2,14 @@ import { NextResponse } from "next/server";
 import { verifyOtp } from "@/lib/otp";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session";
-
-const E164 = /^\+[1-9]\d{7,14}$/;
+import { normalizeIndianPhone } from "@/lib/phone";
 
 export async function POST(request) {
   const body = await request.json().catch(() => null);
-  const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+  const phone = normalizeIndianPhone(body?.phone);
   const code = typeof body?.code === "string" ? body.code.trim() : "";
 
-  if (!E164.test(phone) || !/^\d{6}$/.test(code)) {
+  if (!phone || !/^\d{6}$/.test(code)) {
     return NextResponse.json({ error: "Invalid phone number or code." }, { status: 400 });
   }
 
