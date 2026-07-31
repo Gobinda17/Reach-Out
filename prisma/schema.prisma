@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tag {
+  id               Int      @id @default(autoincrement())
+  code             String   @unique
+  name             String
+  phone            String
+  email            String?
+  vehicleReg       String?
+  vehicleMakeModel String?
+  address          String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("tags")
+}
