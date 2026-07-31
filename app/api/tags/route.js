@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateTagCode } from "@/lib/tagCode";
+import { getCurrentUser } from "@/lib/dal";
 
 export async function POST(request) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "You need to log in first." }, { status: 401 });
+  }
+
   const body = await request.json();
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const phone = typeof body.phone === "string" ? body.phone.trim() : "";
@@ -28,6 +34,7 @@ export async function POST(request) {
       vehicleMakeModel: body.vehicleMakeModel || null,
       address: body.address || null,
       notes: body.notes || null,
+      createdById: user.id,
     },
   });
 

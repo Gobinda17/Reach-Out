@@ -10,7 +10,7 @@ export function SiteFooter() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
               <ShieldIcon className="h-4 w-4" />
             </span>
-            Kavach
+            Reach-Out
           </span>
           <p className="max-w-xs text-sm text-slate-500 dark:text-slate-400">
             A privacy-first contact tag. Scan it, reach the owner, never see their number.
@@ -34,7 +34,7 @@ export function SiteFooter() {
             How it works
           </Link>
           <Link href="/#why" className="text-slate-500 transition-colors hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400">
-            Why Kavach
+            Why Reach-Out
           </Link>
           <Link href="/about" className="text-slate-500 transition-colors hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400">
             About
@@ -42,7 +42,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="mx-auto w-full max-w-6xl border-t border-slate-100 px-6 py-6 text-xs text-slate-400 dark:border-slate-900">
-        © {new Date().getFullYear()} Kavach. All rights reserved.
+        © {new Date().getFullYear()} Reach-Out. All rights reserved.
       </div>
     </footer>
   );

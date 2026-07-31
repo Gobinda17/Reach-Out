@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Kavach — Let people reach you, privately",
+  title: "Reach-Out — Let people reach you, privately",
   description: "A privacy-first contact tag. Scan it, reach the owner, never see their number.",
 };
 

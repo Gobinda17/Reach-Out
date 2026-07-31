@@ -5,7 +5,7 @@ const PRINCIPLES = [
   {
     icon: ShieldIcon,
     title: "Privacy is the default, not a setting",
-    body: "You shouldn't have to dig through a menu to keep your number private. On Kavach, it's simply never collected by the tag or the page in the first place.",
+    body: "You shouldn't have to dig through a menu to keep your number private. On Reach-Out, it's simply never collected by the tag or the page in the first place.",
   },
   {
     icon: CameraIcon,
@@ -31,13 +31,13 @@ export default function AboutPage() {
         <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-6 py-24 text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300">
             <ShieldIcon className="h-3.5 w-3.5" />
-            About Kavach
+            About Reach-Out
           </span>
           <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
             Privacy shouldn&apos;t be a luxury feature.
           </h1>
           <p className="max-w-xl text-lg text-slate-600 dark:text-slate-400">
-            Kavach started from a simple annoyance: the only way to let a stranger reach you was to
+            Reach-Out started from a simple annoyance: the only way to let a stranger reach you was to
             hand over your phone number and hope for the best. We built a tag that solves the
             problem instead of just tolerating it.
           </p>
@@ -93,7 +93,7 @@ export default function AboutPage() {
               Where things stand today
             </h3>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Right now, Kavach is the core lookup: generate a tag from your details, get a QR code,
+              Right now, Reach-Out is the core lookup: generate a tag from your details, get a QR code,
               and scanning it resolves straight back to a contact card. Masked calling, WhatsApp
               routing, and the rest of the roadmap build on top of that same short-code foundation.
             </p>

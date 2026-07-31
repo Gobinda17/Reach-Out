@@ -35,7 +35,7 @@ export default function ScanPage() {
     async (raw) => {
       const code = extractTagCode(raw);
       if (!code) {
-        setDecodeError("This QR code isn't a Kavach tag QR code.");
+        setDecodeError("This QR code isn't a Reach-Out tag QR code.");
         return;
       }
       stopCamera();

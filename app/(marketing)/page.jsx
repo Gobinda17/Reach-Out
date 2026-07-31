@@ -97,7 +97,7 @@ export default function Home() {
               .
             </h1>
             <p className="max-w-md text-lg text-slate-600 dark:text-slate-400">
-              Put a Kavach tag on your car, bike, or bag. Anyone who scans it can look up your
+              Put a Reach-Out tag on your car, bike, or bag. Anyone who scans it can look up your
               contact card instantly — your phone number stays private.
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -215,11 +215,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Why Kavach */}
+      {/* Why Reach-Out */}
       <section id="why" className="mx-auto w-full max-w-5xl px-6 py-20">
         <div className="text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            Why Kavach
+            Why Reach-Out
           </h2>
         </div>
         <div className="mt-14 grid gap-8 sm:grid-cols-2">

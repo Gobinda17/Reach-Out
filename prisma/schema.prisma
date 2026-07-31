@@ -7,6 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  SALES
+  CUSTOMER
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique
+  name      String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags Tag[]
+
+  @@map("users")
+}
+
+model Otp {
+  id         Int       @id @default(autoincrement())
+  phone      String
+  codeHash   String
+  purpose    String    @default("login")
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, consumedAt, expiresAt])
+  @@map("otps")
+}
+
 model Tag {
   id               Int      @id @default(autoincrement())
   code             String   @unique
@@ -17,6 +50,8 @@ model Tag {
   vehicleMakeModel String?
   address          String?
   notes            String?
+  createdById      Int?
+  createdBy        User?    @relation(fields: [createdById], references: [id])
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
