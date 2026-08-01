@@ -33,6 +33,26 @@ model User {
   @@map("users")
 }
 
+model Order {
+  id                Int         @id @default(autoincrement())
+  userId            Int
+  user              User        @relation(fields: [userId], references: [id])
+  product           String
+  amountPaise       Int
+  currency          String      @default("INR")
+  status            OrderStatus @default(CREATED)
+  razorpayOrderId   String      @unique
+  razorpayPaymentId String?
+  customerData      Json
+  tagId             Int?        @unique
+  tag               Tag?        @relation(fields: [tagId], references: [id])
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId, status])
+  @@map("orders")
+}
+
 model Otp {
   id         Int       @id @default(autoincrement())
   phone      String
@@ -82,6 +102,7 @@ model Tag {
   updatedAt        DateTime @updatedAt
 
   messages ScanMessage[]
+  order    Order?
 
   @@map("tags")
 }
