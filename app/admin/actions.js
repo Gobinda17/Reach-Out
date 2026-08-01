@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getAdmin } from "@/lib/dal";
-import { sanitizeCustomer } from "@/lib/tags";
+import { sanitizeCustomer, createBlankTag } from "@/lib/tags";
 import { parseInrToPaise, formatInr } from "@/lib/products";
-import { productUsage } from "@/lib/catalogue";
+import { productUsage, listProducts } from "@/lib/catalogue";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 const ROLES = ["ADMIN", "SALES", "CUSTOMER"];
@@ -287,17 +287,90 @@ export async function updateTag(_prevState, formData) {
   if (!code) return fail("Invalid tag.");
 
   const customer = sanitizeCustomer(Object.fromEntries(formData));
-  if (!customer.name || !customer.phone) return fail("Name and phone are required.");
+  // A bulk-generated tag can be left fully blank (still unclaimed) — but half
+  // a name/phone pair would leave it in a broken in-between state.
+  if (Boolean(customer.name) !== Boolean(customer.phone)) {
+    return fail("Enter both a name and phone number, or leave both blank to keep this tag unclaimed.");
+  }
 
   const existing = await prisma.tag.findUnique({ where: { code } });
   if (!existing) return fail("Tag not found.");
 
-  await prisma.tag.update({ where: { code }, data: customer });
+  await prisma.tag.update({
+    where: { code },
+    data: { ...customer, name: customer.name || null, phone: customer.phone || null },
+  });
 
   revalidatePath("/admin/tags");
   revalidatePath(`/admin/tags/${code}`);
   revalidatePath(`/t/${code}`);
   return done("Tag updated.");
+}
+
+// Bulk-creates blank, unowned tags for printing and physical distribution.
+// Whoever scans one first can claim it — see claimTag() in lib/tags.js.
+export async function bulkGenerateTags(_prevState, formData) {
+  const admin = await getAdmin();
+  if (!admin) return fail("Not authorized.");
+
+  const count = Number(formData.get("count"));
+  if (!Number.isInteger(count) || count < 1 || count > 200) {
+    return fail("Enter a quantity between 1 and 200.");
+  }
+
+  const product = String(formData.get("product") ?? "").trim();
+  const products = await listProducts();
+  if (!products.some((p) => p.slug === product)) {
+    return fail("Unknown product.");
+  }
+
+  const codes = [];
+  for (let i = 0; i < count; i++) {
+    const tag = await createBlankTag({ product });
+    codes.push(tag.code);
+  }
+
+  revalidatePath("/admin/tags");
+  return { ok: true, message: `Generated ${count} unclaimed tag${count === 1 ? "" : "s"}.`, codes };
+}
+
+// Marks a batch of tags as physically shipped. Called directly from the
+// Fulfillment page's selection UI as a plain async function (not a
+// <form action>, since it operates on a dynamic set of checked rows) rather
+// than through useActionState like the rest of this file.
+export async function markTagsShipped(codes) {
+  const admin = await getAdmin();
+  if (!admin) return fail("Not authorized.");
+
+  const list = Array.isArray(codes) ? codes.map((c) => String(c).toUpperCase()) : [];
+  if (list.length === 0) return fail("No tags selected.");
+
+  const result = await prisma.tag.updateMany({
+    where: { code: { in: list }, shippedAt: null },
+    data: { shippedAt: new Date() },
+  });
+
+  revalidatePath("/admin/fulfillment");
+  revalidatePath("/admin/tags");
+  return { ok: true, message: `Marked ${result.count} tag${result.count === 1 ? "" : "s"} as shipped.` };
+}
+
+// Marks a batch of just-registered tags as downloaded, once their card+address
+// ZIP has actually been exported — same direct-call pattern as markTagsShipped.
+export async function markTagsDownloaded(codes) {
+  const admin = await getAdmin();
+  if (!admin) return fail("Not authorized.");
+
+  const list = Array.isArray(codes) ? codes.map((c) => String(c).toUpperCase()) : [];
+  if (list.length === 0) return fail("No tags selected.");
+
+  const result = await prisma.tag.updateMany({
+    where: { code: { in: list } },
+    data: { downloadedAt: new Date() },
+  });
+
+  revalidatePath("/admin/tags");
+  return { ok: true, message: `Marked ${result.count} tag${result.count === 1 ? "" : "s"} as downloaded.` };
 }
 
 export async function deleteTag(_prevState, formData) {

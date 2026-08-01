@@ -15,9 +15,10 @@ export async function POST(request) {
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+  const address = typeof body?.address === "string" ? body.address.trim() : "";
 
-  if (!name || !phone) {
-    return NextResponse.json({ error: "name and phone are required" }, { status: 400 });
+  if (!name || !phone || !address) {
+    return NextResponse.json({ error: "name, phone, and address are required" }, { status: 400 });
   }
 
   const product = await getPurchasableProduct(body?.product ?? DEFAULT_PRODUCT_SLUG);

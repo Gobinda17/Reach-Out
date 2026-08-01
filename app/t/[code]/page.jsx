@@ -21,6 +21,7 @@ export default async function TagPage({ params }) {
 
   const user = await getCurrentUser();
   const isOwner = Boolean(user && tag.createdById === user.id);
+  const isUnclaimed = tag.createdById === null;
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center bg-gradient-to-b from-yellow-50 to-slate-50 px-6 py-16 dark:from-yellow-500/10 dark:to-slate-950">
@@ -32,9 +33,13 @@ export default async function TagPage({ params }) {
 
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-            This tag is registered
+            {isUnclaimed ? "This tag hasn't been claimed yet" : "This tag is registered"}
           </h1>
-          {tag.vehicleReg ? (
+          {isUnclaimed ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              If this is your tag, claim it below to start receiving calls and messages.
+            </p>
+          ) : tag.vehicleReg ? (
             <p className="tracking-widest text-slate-500 dark:text-slate-400">{tag.vehicleReg}</p>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -46,10 +51,12 @@ export default async function TagPage({ params }) {
           )}
         </div>
 
-        <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
-          The owner&apos;s name and phone number are never shown here — call or message them
-          below and it goes straight through.
-        </p>
+        {!isUnclaimed && (
+          <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
+            The owner&apos;s name and phone number are never shown here — call or message them
+            below and it goes straight through.
+          </p>
+        )}
 
         {isOwner ? (
           <div className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
@@ -59,6 +66,13 @@ export default async function TagPage({ params }) {
               dashboard.
             </p>
           </div>
+        ) : isUnclaimed ? (
+          <Link
+            href={`/t/${tag.code}/claim`}
+            className="w-full rounded-full bg-black px-5 py-2.5 text-sm font-medium text-yellow-400 shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-md"
+          >
+            Claim this tag
+          </Link>
         ) : (
           <TagContactPanel code={tag.code} />
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import QRCode from "qrcode";
@@ -15,18 +15,47 @@ const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
 // `products` comes from the server so the picker always shows current prices.
 // The price shown here is display only — the server re-prices every order.
-export function GenerateForm({ initialCustomer, product: initialProduct, products, devBypass = false }) {
+export function GenerateForm({
+  initialCustomer,
+  product: initialProduct,
+  products,
+  devBypass = false,
+  existingTagCode = null,
+}) {
   const [product, setProduct] = useState(initialProduct);
   const [customer, setCustomer] = useState({ ...emptyCustomer, ...initialCustomer });
   const [submitting, setSubmitting] = useState(false);
   const [checkoutReady, setCheckoutReady] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [existingCard, setExistingCard] = useState(null);
+
+  // Renders the user's most recent tag into the preview panel before they've
+  // generated a new one, so the panel isn't just an empty placeholder for
+  // anyone who already has a tag.
+  useEffect(() => {
+    if (!existingTagCode) return;
+    let cancelled = false;
+    (async () => {
+      const url = `${window.location.origin}/t/${existingTagCode}`;
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        width: 320,
+      });
+      const cardDataUrl = await composeTagCard({ qrDataUrl, code: existingTagCode });
+      if (!cancelled) setExistingCard({ code: existingTagCode, cardDataUrl });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [existingTagCode]);
 
   const free = isFree(product);
   const canGenerate =
     customer.name.trim() !== "" &&
     customer.phone.trim() !== "" &&
+    customer.address.trim() !== "" &&
     (free || devBypass || checkoutReady);
 
   async function issueTag(url, body) {
@@ -197,7 +226,7 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
 
           {!result && !canGenerate && (
             <p className="text-xs text-slate-400">
-              Name and phone number are required to continue.
+              Name, phone number, and address are required to continue.
             </p>
           )}
 
@@ -228,20 +257,40 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
                 alt={`Reach-Out tag card${customer.name ? ` for ${customer.name}` : ""}`}
                 className="h-full w-full object-contain"
               />
+            ) : error ? (
+              <div className="flex flex-col items-center gap-2 px-6 text-center">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
+                  <QrIcon className="h-4.5 w-4.5" />
+                </span>
+                <p className="text-sm text-rose-500">{error}</p>
+              </div>
+            ) : existingCard ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={existingCard.cardDataUrl}
+                alt={`Your existing Reach-Out tag, ${existingCard.code}`}
+                className="h-full w-full object-contain"
+              />
             ) : (
               <div className="flex flex-col items-center gap-2 px-6 text-center">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
                   <QrIcon className="h-4.5 w-4.5" />
                 </span>
                 <p className="text-sm text-slate-400">
-                  {error ??
-                    (free
-                      ? "Fill in your details, then generate — your printable tag card will appear here."
-                      : `Fill in your details, then pay ${formatInr(product.pricePaise)} — your printable tag card will appear here.`)}
+                  {free
+                    ? "Fill in your details, then generate — your printable tag card will appear here."
+                    : `Fill in your details, then pay ${formatInr(product.pricePaise)} — your printable tag card will appear here.`}
                 </p>
               </div>
             )}
           </div>
+
+          {!result && existingCard && (
+            <p className="text-center text-xs text-slate-400">
+              Showing your most recent tag ({existingCard.code}). Fill in your details and{" "}
+              {free ? "generate" : `pay ${formatInr(product.pricePaise)}`} to create a new one.
+            </p>
+          )}
 
           {result && (
             <div className="flex flex-col gap-4 text-center">

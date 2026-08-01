@@ -232,10 +232,27 @@ export default function ScanPage() {
                     )}
                   </div>
                 )}
-                <p className="text-xs text-slate-400">
-                  The owner&apos;s name and phone number are never shown — not even here.
-                </p>
-                <TagContactPanel code={tagCode} />
+                {tagInfo.claimed ? (
+                  <>
+                    <p className="text-xs text-slate-400">
+                      The owner&apos;s name and phone number are never shown — not even here.
+                    </p>
+                    <TagContactPanel code={tagCode} />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      This tag hasn&apos;t been claimed yet. If it&apos;s yours, claim it to start
+                      receiving calls and messages.
+                    </p>
+                    <a
+                      href={`/t/${tagCode}/claim`}
+                      className="rounded-full bg-black px-5 py-2.5 text-center text-sm font-medium text-yellow-400 shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-md"
+                    >
+                      Claim this tag
+                    </a>
+                  </>
+                )}
               </div>
             ) : (
               <p className="text-sm text-slate-400">

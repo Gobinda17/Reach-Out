@@ -89,20 +89,32 @@ model Product {
 }
 
 model Tag {
-  id               Int      @id @default(autoincrement())
-  code             String   @unique
-  product          String   @default("free-etag")
-  name             String
-  phone            String
+  id               Int       @id @default(autoincrement())
+  code             String    @unique
+  product          String    @default("free-etag")
+  // Null until claimed — admin-bulk-generated tags start with no owner and no
+  // customer details, and are filled in when someone scans and claims one.
+  name             String?
+  phone            String?
   email            String?
   vehicleReg       String?
   vehicleMakeModel String?
   address          String?
   notes            String?
   createdById      Int?
-  createdBy        User?    @relation(fields: [createdById], references: [id])
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdBy        User?     @relation(fields: [createdById], references: [id])
+  // Set once, the moment an unclaimed tag is claimed — unlike updatedAt, later
+  // edits (admin corrections, etc.) don't overwrite this.
+  claimedAt        DateTime?
+  // Fulfillment: set when admin ships the physical tag. Only meaningful for
+  // addressed-but-not-yet-claimed tags (self-service orders) — a tag claimed
+  // from blank stock is already in its owner's hands by definition.
+  shippedAt        DateTime?
+  // Set when admin exports a just-registered tag's card+address (Registered
+  // tab) — tracks which of these have already been pulled for processing.
+  downloadedAt     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   messages ScanMessage[]
   scans    Scan[]
@@ -156,17 +168,17 @@ model Scan {
 // development; a real provider (Exotel, Twilio, ...) replaces it later
 // without changing this table's shape.
 model Call {
-  id            Int      @id @default(autoincrement())
-  tagId         Int
-  tag           Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  initiatedById Int?
-  initiatedBy   User?    @relation(fields: [initiatedById], references: [id])
-  provider      String
-  virtualNumber String
+  id             Int      @id @default(autoincrement())
+  tagId          Int
+  tag            Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  initiatedById  Int?
+  initiatedBy    User?    @relation(fields: [initiatedById], references: [id])
+  provider       String
+  virtualNumber  String
   providerCallId String?
-  status        String   @default("allocated")
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
+  status         String   @default("allocated")
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
 
   @@index([initiatedById, createdAt])
   @@index([tagId, createdAt])

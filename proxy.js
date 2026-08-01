@@ -3,10 +3,14 @@ import { cookies } from "next/headers";
 import { decrypt } from "@/lib/session";
 
 const PROTECTED_PREFIXES = ["/generate", "/admin", "/dashboard"];
+// Claiming a tag requires an account — same as any other logged-in action —
+// but /t/:code itself must stay public for anonymous scanners.
+const CLAIM_ROUTE = /^\/t\/[^/]+\/claim$/;
 
 export default async function proxy(request) {
   const { pathname } = request.nextUrl;
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isProtected =
+    CLAIM_ROUTE.test(pathname) || PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   if (!isProtected) return NextResponse.next();
 
   const cookie = (await cookies()).get("session")?.value;
@@ -28,5 +32,5 @@ export default async function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/generate", "/admin/:path*", "/dashboard"],
+  matcher: ["/generate", "/admin/:path*", "/dashboard", "/t/:code/claim"],
 };

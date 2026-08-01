@@ -28,5 +28,6 @@ export async function GET(_request, { params }) {
   return NextResponse.json({
     vehicleReg: tag.vehicleReg ?? "",
     vehicleMakeModel: tag.vehicleMakeModel ?? "",
+    claimed: tag.createdById !== null,
   });
 }

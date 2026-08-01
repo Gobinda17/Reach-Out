@@ -28,8 +28,8 @@ export async function POST(request) {
   }
 
   const customer = sanitizeCustomer(body?.customer);
-  if (!customer.name || !customer.phone) {
-    return NextResponse.json({ error: "name and phone are required" }, { status: 400 });
+  if (!customer.name || !customer.phone || !customer.address) {
+    return NextResponse.json({ error: "name, phone, and address are required" }, { status: 400 });
   }
 
   if (paymentDevModeEnabled()) {

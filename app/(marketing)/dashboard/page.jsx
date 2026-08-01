@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import QRCode from "qrcode";
 import { verifySession, getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 import { productNameMap } from "@/lib/catalogue";
 import { formatAmount } from "@/lib/products";
 import { PhoneChangeForm } from "@/components/PhoneChangeForm";
 import { NameEditForm } from "@/components/NameEditForm";
+import { DownloadTagButton } from "@/components/DownloadTagButton";
 import { UserIcon, TagIcon, ChatIcon, QrIcon, CameraIcon, PhoneIcon } from "@/components/icons";
 
 const STATUS_STYLE = {
@@ -72,6 +75,20 @@ export default async function DashboardPage() {
     }),
     productNameMap(),
   ]);
+
+  const hdrs = await headers();
+  const host = hdrs.get("host") ?? "localhost:3000";
+  const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+  const tagsWithQr = await Promise.all(
+    tags.map(async (tag) => ({
+      ...tag,
+      qrSvg: await QRCode.toString(`${protocol}://${host}/t/${tag.code}`, {
+        type: "svg",
+        margin: 1,
+        color: { dark: "#000000ff", light: "#ffffff00" },
+      }),
+    }))
+  );
 
   const messages = tags
     .flatMap((tag) => tag.messages.map((message) => ({ ...message, tagCode: tag.code })))
@@ -162,7 +179,7 @@ export default async function DashboardPage() {
           title="Your tags"
           description="Tags you've created, and how many calls and messages each has received."
         >
-          {tags.length === 0 ? (
+          {tagsWithQr.length === 0 ? (
             <EmptyRow>
               You don&apos;t have any tags yet.{" "}
               <Link href="/generate" className="font-medium text-amber-600 dark:text-yellow-400">
@@ -171,35 +188,42 @@ export default async function DashboardPage() {
             </EmptyRow>
           ) : (
             <ul className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
-              {tags.map((tag) => (
+              {tagsWithQr.map((tag) => (
                 <li key={tag.id} className="flex items-center justify-between gap-4 py-3">
-                  <div>
-                    <Link
-                      href={`/t/${tag.code}`}
-                      className="font-mono text-sm font-medium text-slate-800 hover:text-amber-600 dark:text-slate-200 dark:hover:text-yellow-400"
-                    >
-                      {tag.code}
-                    </Link>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {names.get(tag.product) ?? tag.product} · {tag.name}
-                      {tag.vehicleReg && (
-                        <>
-                          {" "}
-                          ·{" "}
-                          <span className="font-mono tracking-wide text-slate-600 dark:text-slate-300">
-                            {tag.vehicleReg}
-                          </span>
-                        </>
-                      )}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="h-12 w-12 shrink-0 rounded-lg bg-white p-1 ring-1 ring-slate-200 dark:ring-slate-700 [&_svg]:h-full [&_svg]:w-full"
+                      dangerouslySetInnerHTML={{ __html: tag.qrSvg }}
+                    />
+                    <div>
+                      <Link
+                        href={`/t/${tag.code}`}
+                        className="font-mono text-sm font-medium text-slate-800 hover:text-amber-600 dark:text-slate-200 dark:hover:text-yellow-400"
+                      >
+                        {tag.code}
+                      </Link>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {names.get(tag.product) ?? tag.product} · {tag.name}
+                        {tag.vehicleReg && (
+                          <>
+                            {" "}
+                            ·{" "}
+                            <span className="font-mono tracking-wide text-slate-600 dark:text-slate-300">
+                              {tag.vehicleReg}
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <span className="flex shrink-0 gap-1.5">
+                  <span className="flex shrink-0 items-center gap-1.5">
                     <span className="whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {tag.calls.length} call{tag.calls.length === 1 ? "" : "s"}
                     </span>
                     <span className="whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {tag.messages.length} message{tag.messages.length === 1 ? "" : "s"}
                     </span>
+                    <DownloadTagButton code={tag.code} />
                   </span>
                 </li>
               ))}

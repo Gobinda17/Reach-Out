@@ -9,8 +9,8 @@
   --surface-soft: #181922;
   --surface-softer: #1f202a;
   --border-subtle: #2c2f3b;
-  --accent: #ce5815;
-  --accent-soft: rgba(206, 88, 21, 0.2);
+  --accent: #facc15;
+  --accent-soft: rgba(250, 204, 21, 0.18);
   --positive: #44b0b9;
   --warning: #e69232;
   --danger: #f2606b;
@@ -37,6 +37,8 @@
   --surface-soft: #f3f4fb;
   --surface-softer: #ebeef9;
   --border-subtle: #d1d4e3;
+  --accent: #d97706;
+  --accent-soft: rgba(217, 119, 6, 0.12);
   --danger: #d92d3f;
   --text: #171823;
   --text-muted: #5e6070;
@@ -99,11 +101,14 @@
 }
 
 .logo-mark {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: conic-gradient(from 210deg, #ce5815, #e69232, #44b0b9, #ce5815);
-  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: #000;
+  color: #facc15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
@@ -111,6 +116,10 @@
   font-weight: 600;
   letter-spacing: 0.03em;
   white-space: nowrap;
+}
+
+.logo-text-accent {
+  color: var(--accent);
 }
 
 .sidebar.collapsed .logo-text {
@@ -392,13 +401,13 @@
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #ce5815, #e69232);
+  background: linear-gradient(135deg, #facc15, #eab308);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 0.77rem;
   font-weight: 600;
-  color: #fff;
+  color: #000;
   flex-shrink: 0;
 }
 
@@ -510,7 +519,7 @@
   height: 28px;
   border-radius: 999px;
   background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.16), transparent),
-    linear-gradient(90deg, rgba(206, 88, 21, 0.2), transparent);
+    linear-gradient(90deg, rgba(250, 204, 21, 0.2), transparent);
   position: relative;
   overflow: hidden;
 }
@@ -519,7 +528,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(135deg, rgba(206, 88, 21, 0.7), rgba(230, 146, 50, 0.1));
+  background-image: linear-gradient(135deg, rgba(250, 204, 21, 0.7), rgba(234, 179, 8, 0.1));
   opacity: 0.55;
   mix-blend-mode: screen;
 }

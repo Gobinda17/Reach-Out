@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ReachIcon } from "@/components/icons";
 
 const NAV = [
   {
@@ -15,6 +16,7 @@ const NAV = [
       { href: "/admin/orders", icon: "💳", text: "Orders", title: "Orders" },
       { href: "/admin/products", icon: "💰", text: "Products", title: "Products" },
       { href: "/admin/tags", icon: "🏷️", text: "Tags", title: "Tags" },
+      { href: "/admin/fulfillment", icon: "📦", text: "Fulfillment", title: "Fulfillment" },
       { href: "/admin/users", icon: "👥", text: "Users", title: "Users" },
     ],
   },
@@ -98,8 +100,12 @@ export function AdminShell({ user, children }) {
             aria-expanded={!collapsed}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <span className="logo-mark" />
-            <span className="logo-text">Reach-Out</span>
+            <span className="logo-mark">
+              <ReachIcon className="h-3.5 w-3.5" />
+            </span>
+            <span className="logo-text">
+              Reach<span className="logo-text-accent">-Out</span>
+            </span>
           </button>
         </div>
 

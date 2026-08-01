@@ -1,4 +1,5 @@
 import { verifySession, getCurrentUser } from "@/lib/dal";
+import { prisma } from "@/lib/db";
 import { GenerateForm } from "@/components/GenerateForm";
 import { QrIcon } from "@/components/icons";
 import { DEFAULT_PRODUCT_SLUG } from "@/lib/products";
@@ -8,6 +9,23 @@ import { paymentDevModeEnabled } from "@/lib/razorpay";
 export default async function GeneratePage({ searchParams }) {
   const session = await verifySession();
   const user = await getCurrentUser();
+
+  // Refills the form from whatever was saved on the last tag this user made,
+  // so a second tag doesn't mean retyping everything from scratch.
+  const lastTag = await prisma.tag.findFirst({
+    where: { createdById: session.userId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      code: true,
+      name: true,
+      phone: true,
+      email: true,
+      vehicleReg: true,
+      vehicleMakeModel: true,
+      address: true,
+      notes: true,
+    },
+  });
 
   const { product } = await searchParams;
   const products = await listProducts();
@@ -54,10 +72,19 @@ export default async function GeneratePage({ searchParams }) {
         </div>
 
         <GenerateForm
-          initialCustomer={{ name: user?.name ?? "", phone: session.phone ?? "" }}
+          initialCustomer={{
+            name: lastTag?.name ?? user?.name ?? "",
+            phone: lastTag?.phone ?? session.phone ?? "",
+            email: lastTag?.email ?? "",
+            vehicleReg: lastTag?.vehicleReg ?? "",
+            vehicleMakeModel: lastTag?.vehicleMakeModel ?? "",
+            address: lastTag?.address ?? "",
+            notes: lastTag?.notes ?? "",
+          }}
           product={selected}
           products={products}
           devBypass={paymentDevModeEnabled()}
+          existingTagCode={lastTag?.code ?? null}
         />
       </div>
     </div>
