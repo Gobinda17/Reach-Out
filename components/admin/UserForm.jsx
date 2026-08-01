@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createUser, updateUser } from "@/app/admin/actions";
+import { PhoneField } from "@/components/PhoneField";
 
 const ROLES = ["CUSTOMER", "SALES", "ADMIN"];
 
@@ -17,18 +18,12 @@ export function UserForm({ user, isSelf }) {
       <div className="form-grid">
         <label className="field">
           <span>Phone number *</span>
-          <input
-            name="phone"
-            type="tel"
-            defaultValue={user?.phone ?? ""}
-            placeholder="98765 43210 or +1 415 555 2671"
-            required
-          />
+          <PhoneField name="phone" value={user?.phone ?? ""} required className="phone-field-shell" />
         </label>
 
         <label className="field">
           <span>Name</span>
-          <input name="name" defaultValue={user?.name ?? ""} placeholder="Optional" />
+          <input name="name" maxLength={100} defaultValue={user?.name ?? ""} placeholder="Optional" />
         </label>
 
         <label className="field">

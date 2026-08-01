@@ -13,10 +13,17 @@ const ROLE_PILL = {
 };
 
 // The admin layout handles the ADMIN-only guard for this route.
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({ searchParams }) {
+  const { q } = await searchParams;
+  const query = typeof q === "string" ? q.trim() : "";
+  const where = query
+    ? { OR: [{ phone: { contains: query } }, { name: { contains: query, mode: "insensitive" } }] }
+    : {};
+
   const [admin, users, adminCount] = await Promise.all([
     getAdmin(),
     prisma.user.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -37,11 +44,25 @@ export default async function AdminUsersPage() {
         <div>
           <h2>Users</h2>
           <p>
-            {users.length} registered user{users.length === 1 ? "" : "s"}. Changing a role saves
-            immediately; click a number to edit the account.
+            {query
+              ? `${users.length} match${users.length === 1 ? "" : "es"} for “${query}”`
+              : `${users.length} registered user${users.length === 1 ? "" : "s"}`}
+            . Changing a role saves immediately; click a number to edit the account.
           </p>
         </div>
       </header>
+
+      <form className="search-form">
+        <input name="q" defaultValue={query} placeholder="Search phone or name." aria-label="Search users" />
+        <button type="submit" className="pill-btn small">
+          Search
+        </button>
+        {query && (
+          <Link href="/admin/users" className="chip">
+            Clear search
+          </Link>
+        )}
+      </form>
 
       <div className="table-wrapper">
         <table className="data-table">
@@ -58,6 +79,13 @@ export default async function AdminUsersPage() {
             </tr>
           </thead>
           <tbody>
+            {users.length === 0 && (
+              <tr>
+                <td className="empty-row" colSpan={8}>
+                  {query ? "No users match that search." : "No users yet."}
+                </td>
+              </tr>
+            )}
             {users.map((u) => {
               const isSelf = u.id === admin?.id;
               const isLastAdmin = u.role === "ADMIN" && adminCount <= 1;

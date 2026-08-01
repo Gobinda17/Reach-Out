@@ -117,12 +117,13 @@ export default async function AdminUserDetailPage({ params }) {
                 <th>Amount</th>
                 <th>Status</th>
                 <th>Placed</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {user.orders.length === 0 ? (
                 <tr>
-                  <td className="empty-row" colSpan={4}>
+                  <td className="empty-row" colSpan={5}>
                     No orders.
                   </td>
                 </tr>
@@ -135,6 +136,15 @@ export default async function AdminUserDetailPage({ params }) {
                       <span className={STATUS_PILL[order.status]}>{order.status}</span>
                     </td>
                     <td className="muted">{order.createdAt.toLocaleDateString()}</td>
+                    <td>
+                      {order.status === "PAID" ? (
+                        <Link href={`/invoices/${order.id}`} className="admin-link">
+                          Invoice
+                        </Link>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

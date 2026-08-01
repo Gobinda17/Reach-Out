@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
+import { verifyScanToken } from "@/lib/scanToken";
+import { checkMessageRateLimit, MessageRateLimitError } from "@/lib/callRateLimit";
+import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 const MAX_MESSAGE_LENGTH = 1000;
+const MAX_NAME_LENGTH = 100;
 
 export async function POST(request, { params }) {
   const { code } = await params;
+  const upperCode = code.toUpperCase();
   const body = await request.json().catch(() => null);
 
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   const fromName = typeof body?.fromName === "string" ? body.fromName.trim() : "";
-  const fromPhone = typeof body?.fromPhone === "string" ? body.fromPhone.trim() : "";
+  const fromPhoneRaw = typeof body?.fromPhone === "string" ? body.fromPhone.trim() : "";
 
   if (!message) {
     return NextResponse.json({ error: "Write a message before sending." }, { status: 400 });
@@ -18,9 +23,37 @@ export async function POST(request, { params }) {
   if (message.length > MAX_MESSAGE_LENGTH) {
     return NextResponse.json({ error: "That message is too long." }, { status: 400 });
   }
+  if (fromName.length > MAX_NAME_LENGTH) {
+    return NextResponse.json({ error: "That name is too long." }, { status: 400 });
+  }
+  // Optional — but if something was entered, it must be a real phone number
+  // rather than arbitrary text, same as every other phone field in the app.
+  const fromPhone = fromPhoneRaw ? normalizePhone(fromPhoneRaw) : "";
+  if (fromPhoneRaw && !fromPhone) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
+  }
+
+  // Requires a fresh, signed token handed out when the contact card was
+  // actually rendered (see lib/scanToken.js) — stops this endpoint being
+  // hit directly with just the printed tag code, long after any real visit.
+  if (!(await verifyScanToken(body?.scanToken, upperCode))) {
+    return NextResponse.json(
+      { error: "This session has expired. Reopen the tag to try again." },
+      { status: 401 }
+    );
+  }
+
+  try {
+    checkMessageRateLimit(upperCode);
+  } catch (err) {
+    if (err instanceof MessageRateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
+    throw err;
+  }
 
   const tag = await prisma.tag.findUnique({
-    where: { code: code.toUpperCase() },
+    where: { code: upperCode },
     select: { id: true, createdById: true },
   });
   if (!tag) {

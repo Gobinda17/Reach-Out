@@ -12,8 +12,16 @@ function toInrInput(pricePaise) {
   return pricePaise % 100 === 0 ? String(pricePaise / 100) : (pricePaise / 100).toFixed(2);
 }
 
-export default async function AdminProductsPage() {
-  const products = await listAllProducts();
+export default async function AdminProductsPage({ searchParams }) {
+  const { q } = await searchParams;
+  const query = typeof q === "string" ? q.trim() : "";
+  const allProducts = await listAllProducts();
+  const products = query
+    ? allProducts.filter((p) => {
+        const needle = query.toLowerCase();
+        return p.name.toLowerCase().includes(needle) || p.slug.toLowerCase().includes(needle);
+      })
+    : allProducts;
 
   // Sold counts come from orders, which snapshot their own amount — so a price
   // change never alters historical revenue. These also decide whether a product
@@ -37,11 +45,26 @@ export default async function AdminProductsPage() {
           <div>
             <h2>Products</h2>
             <p>
-              {products.length} product{products.length === 1 ? "" : "s"}. Price changes apply to
-              new purchases only — orders already placed keep the amount they were charged.
+              {query
+                ? `${products.length} match${products.length === 1 ? "" : "es"} for “${query}”`
+                : `${products.length} product${products.length === 1 ? "" : "s"}`}
+              . Price changes apply to new purchases only — orders already placed keep the amount
+              they were charged.
             </p>
           </div>
         </header>
+
+        <form className="search-form">
+          <input name="q" defaultValue={query} placeholder="Search name or slug." aria-label="Search products" />
+          <button type="submit" className="pill-btn small">
+            Search
+          </button>
+          {query && (
+            <Link href="/admin/products" className="chip">
+              Clear search
+            </Link>
+          )}
+        </form>
 
         <div className="table-wrapper">
           <table className="data-table">
@@ -60,7 +83,7 @@ export default async function AdminProductsPage() {
               {products.length === 0 ? (
                 <tr>
                   <td className="empty-row" colSpan={7}>
-                    No products yet — add one below.
+                    {query ? "No products match that search." : "No products yet — add one below."}
                   </td>
                 </tr>
               ) : (

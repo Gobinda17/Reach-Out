@@ -116,6 +116,14 @@ export function ReachIcon({ className, holeClassName = "fill-black" }) {
   );
 }
 
+export function ChevronDownIcon({ className }) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
 // Simple generic car-side-view glyph, used for the vehicle-tag motif.
 export function CarIcon({ className }) {
   return (

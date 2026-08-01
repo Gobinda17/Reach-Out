@@ -10,7 +10,7 @@ const TABS = [
   { key: "message", label: "Message", icon: ChatIcon },
 ];
 
-export function TagContactPanel({ code }) {
+export function TagContactPanel({ code, scanToken }) {
   const [tab, setTab] = useState("call");
 
   return (
@@ -33,7 +33,11 @@ export function TagContactPanel({ code }) {
         ))}
       </div>
 
-      {tab === "call" ? <CallOwnerPanel code={code} /> : <ContactOwnerForm code={code} />}
+      {tab === "call" ? (
+        <CallOwnerPanel code={code} scanToken={scanToken} />
+      ) : (
+        <ContactOwnerForm code={code} scanToken={scanToken} />
+      )}
     </div>
   );
 }

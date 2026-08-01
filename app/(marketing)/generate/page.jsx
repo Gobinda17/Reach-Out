@@ -83,7 +83,7 @@ export default async function GeneratePage({ searchParams }) {
           }}
           product={selected}
           products={products}
-          devBypass={paymentDevModeEnabled()}
+          devBypass={await paymentDevModeEnabled()}
           existingTagCode={lastTag?.code ?? null}
         />
       </div>

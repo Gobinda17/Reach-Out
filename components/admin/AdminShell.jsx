@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReachIcon } from "@/components/icons";
+import { ADMIN_THEME_KEY } from "@/lib/adminTheme";
 
 const NAV = [
   {
@@ -20,13 +21,11 @@ const NAV = [
       { href: "/admin/users", icon: "👥", text: "Users", title: "Users" },
     ],
   },
+  {
+    label: "Configure",
+    items: [{ href: "/admin/settings", icon: "⚙️", text: "Settings", title: "Settings" }],
+  },
 ];
-
-const THEME_KEY = "reachOutAdminTheme";
-
-// Applies the saved theme before first paint, so a light-theme user never sees a
-// flash of the dark shell. Doing this in an effect would repaint after hydration.
-const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_KEY)});if(t==="light"||t==="dark"){document.getElementById("adminApp").dataset.theme=t}}catch(e){}})()`;
 
 function isActive(pathname, href) {
   return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -59,7 +58,7 @@ export function AdminShell({ user, children }) {
     const next = root.dataset.theme === "light" ? "dark" : "light";
     root.dataset.theme = next;
     try {
-      localStorage.setItem(THEME_KEY, next);
+      localStorage.setItem(ADMIN_THEME_KEY, next);
     } catch {
       // localStorage can be unavailable (private mode); the toggle still works
       // for this session.
@@ -90,7 +89,6 @@ export function AdminShell({ user, children }) {
       data-theme="dark"
       data-compact={compact ? "true" : "false"}
     >
-      <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
       <aside className={`sidebar${collapsed ? " collapsed" : ""}`}>
         <div className="sidebar-header">
           <button

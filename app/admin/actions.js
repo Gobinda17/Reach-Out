@@ -7,6 +7,8 @@ import { sanitizeCustomer, createBlankTag } from "@/lib/tags";
 import { parseInrToPaise, formatInr } from "@/lib/products";
 import { productUsage, listProducts } from "@/lib/catalogue";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
+import { setSetting } from "@/lib/settings";
+import { CALL_PROVIDERS } from "@/lib/calling";
 
 const ROLES = ["ADMIN", "SALES", "CUSTOMER"];
 
@@ -292,6 +294,9 @@ export async function updateTag(_prevState, formData) {
   if (Boolean(customer.name) !== Boolean(customer.phone)) {
     return fail("Enter both a name and phone number, or leave both blank to keep this tag unclaimed.");
   }
+  if (customer.phone && !normalizePhone(customer.phone)) {
+    return fail(PHONE_ERROR);
+  }
 
   const existing = await prisma.tag.findUnique({ where: { code } });
   if (!existing) return fail("Tag not found.");
@@ -371,6 +376,35 @@ export async function markTagsDownloaded(codes) {
 
   revalidatePath("/admin/tags");
   return { ok: true, message: `Marked ${result.count} tag${result.count === 1 ? "" : "s"} as downloaded.` };
+}
+
+// Blank secret fields mean "leave unchanged" — the settings page never
+// echoes a saved secret back into an input, so an empty submit must not be
+// read as "clear it".
+export async function updateSettings(_prevState, formData) {
+  const admin = await getAdmin();
+  if (!admin) return fail("Not authorized.");
+
+  const callProvider = String(formData.get("callProvider") ?? "");
+  if (!CALL_PROVIDERS.some((p) => p.key === callProvider)) {
+    return fail("Unknown call provider.");
+  }
+  await setSetting("CALL_PROVIDER", callProvider);
+
+  const callmaskApiKey = String(formData.get("callmaskApiKey") ?? "").trim();
+  if (callmaskApiKey) await setSetting("CALLMASK_API_KEY", callmaskApiKey);
+
+  await setSetting("OTP_DEV_MODE", formData.get("otpDevMode") === "on" ? "true" : "false");
+  await setSetting("RAZORPAY_DEV_MODE", formData.get("razorpayDevMode") === "on" ? "true" : "false");
+
+  const razorpayKeyId = String(formData.get("razorpayKeyId") ?? "").trim();
+  if (razorpayKeyId) await setSetting("RAZORPAY_KEY_ID", razorpayKeyId);
+
+  const razorpayKeySecret = String(formData.get("razorpayKeySecret") ?? "").trim();
+  if (razorpayKeySecret) await setSetting("RAZORPAY_KEY_SECRET", razorpayKeySecret);
+
+  revalidatePath("/admin/settings");
+  return done("Settings saved.");
 }
 
 export async function deleteTag(_prevState, formData) {

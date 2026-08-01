@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/dal";
 import { isFree, DEFAULT_PRODUCT_SLUG } from "@/lib/products";
 import { getPurchasableProduct } from "@/lib/catalogue";
 import { createTag } from "@/lib/tags";
+import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 // Free tags only. Paid products must go through /api/orders → /api/orders/verify,
 // which issues the tag once Razorpay confirms the payment.
@@ -19,6 +20,9 @@ export async function POST(request) {
 
   if (!name || !phone || !address) {
     return NextResponse.json({ error: "name, phone, and address are required" }, { status: 400 });
+  }
+  if (!normalizePhone(phone)) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
   }
 
   const product = await getPurchasableProduct(body?.product ?? DEFAULT_PRODUCT_SLUG);

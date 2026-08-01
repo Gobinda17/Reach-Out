@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
 import { claimTag } from "@/lib/tags";
+import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 // Assigns an admin-bulk-generated (unowned) tag to whoever fills in their
 // details for it first. Once a tag has an owner, it can't be re-claimed —
@@ -22,6 +23,9 @@ export async function POST(request, { params }) {
 
   if (!name || !phone || !address) {
     return NextResponse.json({ error: "name, phone, and address are required" }, { status: 400 });
+  }
+  if (!normalizePhone(phone)) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
   }
 
   const tag = await prisma.tag.findUnique({

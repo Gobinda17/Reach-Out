@@ -9,7 +9,7 @@ import { downloadTagCardsZip } from "@/lib/tagCard";
 
 // `tags` are plain objects (dates pre-formatted by the server component) so
 // this stays a client component without needing to serialize Prisma rows.
-export function FulfillmentTable({ tags, pending }) {
+export function FulfillmentTable({ tags, pending, emptyMessage }) {
   const router = useRouter();
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(null);
@@ -141,7 +141,7 @@ export function FulfillmentTable({ tags, pending }) {
             {tags.length === 0 ? (
               <tr>
                 <td className="empty-row" colSpan={pending ? 7 : 6}>
-                  {pending ? "Nothing waiting on fulfillment." : "Nothing shipped yet."}
+                  {emptyMessage ?? (pending ? "Nothing waiting on fulfillment." : "Nothing shipped yet.")}
                 </td>
               </tr>
             ) : (

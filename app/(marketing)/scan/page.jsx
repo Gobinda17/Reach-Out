@@ -237,7 +237,7 @@ export default function ScanPage() {
                     <p className="text-xs text-slate-400">
                       The owner&apos;s name and phone number are never shown — not even here.
                     </p>
-                    <TagContactPanel code={tagCode} />
+                    <TagContactPanel code={tagCode} scanToken={tagInfo.scanToken} />
                   </>
                 ) : (
                   <>

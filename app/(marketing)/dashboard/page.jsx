@@ -4,17 +4,11 @@ import QRCode from "qrcode";
 import { verifySession, getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 import { productNameMap } from "@/lib/catalogue";
-import { formatAmount } from "@/lib/products";
 import { PhoneChangeForm } from "@/components/PhoneChangeForm";
 import { NameEditForm } from "@/components/NameEditForm";
 import { DownloadTagButton } from "@/components/DownloadTagButton";
+import { PaymentsTable } from "@/components/PaymentsTable";
 import { UserIcon, TagIcon, ChatIcon, QrIcon, CameraIcon, PhoneIcon } from "@/components/icons";
-
-const STATUS_STYLE = {
-  PAID: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-  CREATED: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-  FAILED: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
-};
 
 function Section({ icon, title, description, children }) {
   return (
@@ -126,52 +120,7 @@ export default async function DashboardPage() {
           title="Payments"
           description="Every order you've placed, most recent first."
         >
-          {orders.length === 0 ? (
-            <EmptyRow>You haven&apos;t placed any orders yet.</EmptyRow>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    <th className="pb-2 font-medium">Product</th>
-                    <th className="pb-2 font-medium">Amount</th>
-                    <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium">Tag</th>
-                    <th className="pb-2 font-medium">Placed</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td className="py-2.5 text-slate-700 dark:text-slate-300">
-                        {names.get(order.product) ?? order.product}
-                      </td>
-                      <td className="py-2.5 text-slate-700 dark:text-slate-300">
-                        {formatAmount(order.amountPaise)}
-                      </td>
-                      <td className="py-2.5">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLE[order.status]}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-2.5 font-mono text-xs text-slate-500 dark:text-slate-400">
-                        {order.tag ? (
-                          <Link href={`/t/${order.tag.code}`} className="hover:text-amber-600 dark:hover:text-yellow-400">
-                            {order.tag.code}
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="py-2.5 text-slate-500 dark:text-slate-400">
-                        {order.createdAt.toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <PaymentsTable orders={orders} names={names} />
         </Section>
 
         <Section

@@ -3,8 +3,10 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
 import { allocateVirtualNumber, CallProviderError, callProviderIsDev } from "@/lib/calling";
 import { checkCallRateLimit, CallRateLimitError } from "@/lib/callRateLimit";
+import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
+import { verifyScanToken } from "@/lib/scanToken";
 
-export async function POST(_request, { params }) {
+export async function POST(request, { params }) {
   const { code } = await params;
   const upperCode = code.toUpperCase();
 
@@ -27,6 +29,26 @@ export async function POST(_request, { params }) {
     return NextResponse.json({ error: "This tag has no phone number on file." }, { status: 400 });
   }
 
+  // Every real masking provider needs the caller's number too, to bind the
+  // masked session to them — there's no way to hand an anonymous stranger a
+  // dial-able number otherwise. The dev bypass doesn't use it, but we still
+  // require it here so the flow behaves the same in dev and production.
+  const body = await request.json().catch(() => null);
+  const callerPhone = normalizePhone(body?.callerPhone);
+  if (!callerPhone) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
+  }
+
+  // Requires a fresh, signed token handed out when the contact card was
+  // actually rendered (see lib/scanToken.js) — stops this endpoint being
+  // hit directly with just the printed tag code, long after any real visit.
+  if (!(await verifyScanToken(body?.scanToken, upperCode))) {
+    return NextResponse.json(
+      { error: "This session has expired. Reopen the tag to try again." },
+      { status: 401 }
+    );
+  }
+
   try {
     checkCallRateLimit(upperCode);
   } catch (err) {
@@ -37,7 +59,11 @@ export async function POST(_request, { params }) {
   }
 
   try {
-    const { provider, virtualNumber, providerCallId, expiresAt } = await allocateVirtualNumber();
+    const { provider, virtualNumber, providerCallId, expiresAt } = await allocateVirtualNumber({
+      ownerPhone: tag.phone,
+      callerPhone,
+      reference: upperCode,
+    });
 
     const call = await prisma.call.create({
       data: {
@@ -54,7 +80,7 @@ export async function POST(_request, { params }) {
       sessionId: call.id,
       virtualNumber,
       expiresAt,
-      devBypass: callProviderIsDev(),
+      devBypass: await callProviderIsDev(),
     });
   } catch (err) {
     if (err instanceof CallProviderError) {

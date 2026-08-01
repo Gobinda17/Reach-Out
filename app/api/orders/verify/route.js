@@ -37,7 +37,7 @@ export async function POST(request) {
 
   let valid;
   try {
-    valid = verifyPaymentSignature({ orderId, paymentId, signature });
+    valid = await verifyPaymentSignature({ orderId, paymentId, signature });
   } catch (err) {
     if (err instanceof RazorpayError) {
       console.error("[razorpay] verification unavailable:", err.message);

@@ -7,6 +7,7 @@ import { getPurchasableProduct } from "@/lib/catalogue";
 import { createRazorpayOrder, razorpayKeyId, paymentDevModeEnabled, RazorpayError } from "@/lib/razorpay";
 import { sanitizeCustomer } from "@/lib/tags";
 import { issuePaidTag } from "@/lib/orders";
+import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 
 export async function POST(request) {
   const user = await getCurrentUser();
@@ -31,8 +32,11 @@ export async function POST(request) {
   if (!customer.name || !customer.phone || !customer.address) {
     return NextResponse.json({ error: "name, phone, and address are required" }, { status: 400 });
   }
+  if (!normalizePhone(customer.phone)) {
+    return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
+  }
 
-  if (paymentDevModeEnabled()) {
+  if (await paymentDevModeEnabled()) {
     console.warn("[razorpay] RAZORPAY_DEV_MODE is on — issuing the tag without a real payment.");
 
     const order = await prisma.order.create({
@@ -73,7 +77,7 @@ export async function POST(request) {
       orderId: rzpOrder.id,
       amountPaise: product.pricePaise,
       currency: rzpOrder.currency ?? "INR",
-      keyId: razorpayKeyId(),
+      keyId: await razorpayKeyId(),
       product: { slug: product.slug, name: product.name },
     });
   } catch (err) {

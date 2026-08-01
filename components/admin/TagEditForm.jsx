@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { CUSTOMER_FIELDS } from "@/lib/customer";
 import { updateTag } from "@/app/admin/actions";
+import { PhoneField } from "@/components/PhoneField";
 
 export function TagEditForm({ tag }) {
   const [state, formAction, pending] = useActionState(updateTag, null);
@@ -19,11 +20,25 @@ export function TagEditForm({ tag }) {
               {field.required && " *"}
             </span>
             {field.key === "address" || field.key === "notes" ? (
-              <textarea name={field.key} rows={2} defaultValue={tag[field.key] ?? ""} />
+              <textarea
+                name={field.key}
+                rows={2}
+                maxLength={field.key === "address" ? 500 : 2000}
+                defaultValue={tag[field.key] ?? ""}
+                required={field.required}
+              />
+            ) : field.key === "phone" ? (
+              <PhoneField
+                name="phone"
+                value={tag.phone ?? ""}
+                required={field.required}
+                className="phone-field-shell"
+              />
             ) : (
               <input
                 name={field.key}
-                type={field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text"}
+                type={field.key === "email" ? "email" : "text"}
+                maxLength={field.key === "name" ? 100 : field.key === "vehicleReg" ? 20 : 100}
                 defaultValue={tag[field.key] ?? ""}
                 required={field.required}
               />

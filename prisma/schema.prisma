@@ -56,6 +56,18 @@ model Order {
   @@map("orders")
 }
 
+// Admin-editable config that overrides the matching env var at runtime — lets
+// an admin switch providers or flip a dev-mode flag from /admin/settings
+// without a redeploy. See lib/settings.js. Value is always a plain string;
+// callers parse/compare it themselves (e.g. "true"/"false" for booleans).
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
 model Otp {
   id         Int       @id @default(autoincrement())
   phone      String

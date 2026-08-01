@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/session";
 
-const PROTECTED_PREFIXES = ["/generate", "/admin", "/dashboard"];
+const PROTECTED_PREFIXES = ["/generate", "/admin", "/dashboard", "/invoices"];
 // Claiming a tag requires an account — same as any other logged-in action —
 // but /t/:code itself must stay public for anonymous scanners.
 const CLAIM_ROUTE = /^\/t\/[^/]+\/claim$/;
@@ -32,5 +32,5 @@ export default async function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/generate", "/admin/:path*", "/dashboard", "/t/:code/claim"],
+  matcher: ["/generate", "/admin/:path*", "/dashboard", "/invoices/:path*", "/t/:code/claim"],
 };

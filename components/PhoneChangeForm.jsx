@@ -2,27 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
+import { PhoneField } from "@/components/PhoneField";
 
 const fieldClass =
   "rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 outline-none transition-colors focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-yellow-500 dark:focus:ring-yellow-500/20";
+
+const fieldShellClass =
+  "rounded-xl border border-slate-200 bg-white text-slate-900 outline-none transition-colors focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus-within:border-yellow-500 dark:focus-within:ring-yellow-500/20";
 
 export function PhoneChangeForm({ currentPhone }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [step, setStep] = useState("phone");
-  const [phone, setPhone] = useState("");
+  const [fullPhone, setFullPhone] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const fullPhone = normalizePhone(phone);
-
   function reset() {
     setEditing(false);
     setStep("phone");
-    setPhone("");
+    setFullPhone("");
     setCode("");
     setError(null);
     setDone(false);
@@ -31,7 +32,7 @@ export function PhoneChangeForm({ currentPhone }) {
   async function handleRequestOtp(e) {
     e.preventDefault();
     if (!fullPhone) {
-      setError(PHONE_ERROR);
+      setError("Enter a valid 10-digit phone number.");
       return;
     }
     setSubmitting(true);
@@ -99,19 +100,9 @@ export function PhoneChangeForm({ currentPhone }) {
       {step === "phone" ? (
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-slate-700 dark:text-slate-300">New phone number</span>
-          <input
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            maxLength={20}
-            required
-            placeholder="98765 43210 or +1 415 555 2671"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s()\-.]/g, ""))}
-            className={fieldClass}
-          />
+          <PhoneField value={fullPhone} onChange={setFullPhone} required className={fieldShellClass} />
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            {fullPhone ? `We'll text a code to ${fullPhone}.` : "10 digits for India, or include a country code."}
+            {fullPhone ? `We'll text a code to ${fullPhone}.` : "Enter your new 10-digit number."}
           </span>
         </label>
       ) : (

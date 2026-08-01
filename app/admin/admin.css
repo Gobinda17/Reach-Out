@@ -39,6 +39,8 @@
   --border-subtle: #d1d4e3;
   --accent: #d97706;
   --accent-soft: rgba(217, 119, 6, 0.12);
+  --positive: #0d9488;
+  --warning: #b45309;
   --danger: #d92d3f;
   --text: #171823;
   --text-muted: #5e6070;
@@ -791,6 +793,42 @@
 .select-control:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* PhoneField's compound (country-select + digits) control, styled to match
+   .field input/.select-control since it isn't a plain input. */
+.phone-field-shell {
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+
+.phone-field-shell:focus-within {
+  border-color: var(--accent);
+}
+
+.phone-field-shell select,
+.phone-field-shell input {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.phone-field-shell select {
+  border-right: 1px solid var(--border-subtle);
+  cursor: pointer;
+}
+
+.phone-field-shell input {
+  flex: 1;
+  min-width: 0;
 }
 
 .form-grid {

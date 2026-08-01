@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { ChatIcon, ShieldIcon } from "@/components/icons";
+import { PhoneField } from "@/components/PhoneField";
 
 const fieldClass =
   "rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 outline-none transition-colors focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-yellow-500 dark:focus:ring-yellow-500/20";
 
-export function ContactOwnerForm({ code }) {
+const fieldShellClass =
+  "rounded-xl border border-slate-200 bg-white text-slate-900 outline-none transition-colors focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus-within:border-yellow-500 dark:focus-within:ring-yellow-500/20";
+
+export function ContactOwnerForm({ code, scanToken }) {
   const [message, setMessage] = useState("");
   const [fromName, setFromName] = useState("");
   const [fromPhone, setFromPhone] = useState("");
@@ -22,7 +26,7 @@ export function ContactOwnerForm({ code }) {
       const res = await fetch(`/api/tags/${code}/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, fromName, fromPhone }),
+        body: JSON.stringify({ message, fromName, fromPhone, scanToken }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -65,19 +69,19 @@ export function ContactOwnerForm({ code }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <input
           type="text"
+          maxLength={100}
           placeholder="Your name (optional)"
           value={fromName}
           onChange={(e) => setFromName(e.target.value)}
           className={fieldClass}
         />
-        <input
-          type="tel"
-          placeholder="Your phone (optional, for a callback)"
+        <PhoneField
           value={fromPhone}
-          onChange={(e) => setFromPhone(e.target.value)}
-          className={fieldClass}
+          onChange={setFromPhone}
+          className={fieldShellClass}
         />
       </div>
+      <p className="-mt-1 text-xs text-slate-400">Phone is optional — only for a callback.</p>
       {error && <p className="text-sm text-rose-500">{error}</p>}
       <button
         type="submit"

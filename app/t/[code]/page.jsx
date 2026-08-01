@@ -2,9 +2,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
+import { createScanToken } from "@/lib/scanToken";
 import { ShieldIcon } from "@/components/icons";
 import { TagContactPanel } from "@/components/TagContactPanel";
 import { ScanBeacon } from "@/components/ScanBeacon";
+import { HideCodeFromAddressBar } from "@/components/HideCodeFromAddressBar";
 
 export default async function TagPage({ params }) {
   const { code } = await params;
@@ -26,6 +28,7 @@ export default async function TagPage({ params }) {
   return (
     <div className="flex min-h-full flex-col items-center justify-center bg-gradient-to-b from-yellow-50 to-slate-50 px-6 py-16 dark:from-yellow-500/10 dark:to-slate-950">
       <ScanBeacon code={tag.code} />
+      <HideCodeFromAddressBar />
       <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
         <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-yellow-400 shadow-lg shadow-black/20">
           <ShieldIcon className="h-7 w-7" />
@@ -74,7 +77,7 @@ export default async function TagPage({ params }) {
             Claim this tag
           </Link>
         ) : (
-          <TagContactPanel code={tag.code} />
+          <TagContactPanel code={tag.code} scanToken={await createScanToken(tag.code)} />
         )}
 
         <p className="text-xs text-slate-400">
