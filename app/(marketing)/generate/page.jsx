@@ -3,6 +3,7 @@ import { GenerateForm } from "@/components/GenerateForm";
 import { QrIcon } from "@/components/icons";
 import { DEFAULT_PRODUCT_SLUG } from "@/lib/products";
 import { listProducts } from "@/lib/catalogue";
+import { paymentDevModeEnabled } from "@/lib/razorpay";
 
 export default async function GeneratePage({ searchParams }) {
   const session = await verifySession();
@@ -56,6 +57,7 @@ export default async function GeneratePage({ searchParams }) {
           initialCustomer={{ name: user?.name ?? "", phone: session.phone ?? "" }}
           product={selected}
           products={products}
+          devBypass={paymentDevModeEnabled()}
         />
       </div>
     </div>

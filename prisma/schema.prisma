@@ -27,8 +27,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tags   Tag[]
-  orders Order[]
+  tags     Tag[]
+  orders   Order[]
+  scans    Scan[]
+  messages ScanMessage[]
+  calls    Call[]
 
   @@map("users")
 }
@@ -102,6 +105,8 @@ model Tag {
   updatedAt        DateTime @updatedAt
 
   messages ScanMessage[]
+  scans    Scan[]
+  calls    Call[]
   order    Order?
 
   @@map("tags")
@@ -109,15 +114,61 @@ model Tag {
 
 // A message left by someone who scanned a tag — lets them reach the owner
 // without the owner's name, phone, or any other detail ever being shown to them.
+// fromUserId records who sent it (when they were logged in) purely so that
+// sender can see their own contact history — it's never exposed to the tag's
+// owner, who still never learns who messaged them unless the sender opts in.
 model ScanMessage {
-  id        Int      @id @default(autoincrement())
-  tagId     Int
-  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  message   String
-  fromName  String?
-  fromPhone String?
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  tagId      Int
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  message    String
+  fromName   String?
+  fromPhone  String?
+  fromUserId Int?
+  fromUser   User?    @relation(fields: [fromUserId], references: [id])
+  createdAt  DateTime @default(now())
 
   @@index([tagId, createdAt])
+  @@index([fromUserId, createdAt])
   @@map("scan_messages")
+}
+
+// One row per time someone looks up a tag — via the public /t/[code] page or
+// the in-app camera scanner. scannedById is null for anonymous visitors; it's
+// only set to let a logged-in scanner see their own scan history.
+model Scan {
+  id          Int      @id @default(autoincrement())
+  tagId       Int
+  tag         Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  scannedById Int?
+  scannedBy   User?    @relation(fields: [scannedById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([scannedById, createdAt])
+  @@index([tagId, createdAt])
+  @@map("scans")
+}
+
+// A masked-calling attempt: a virtual/proxy number allocated for a scanner to
+// dial so the tag's owner can be reached without either side ever seeing the
+// other's real number. `provider` is a config switch (see lib/calling.js) —
+// "dev" allocates a placeholder number and connects nothing for local
+// development; a real provider (Exotel, Twilio, ...) replaces it later
+// without changing this table's shape.
+model Call {
+  id            Int      @id @default(autoincrement())
+  tagId         Int
+  tag           Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  initiatedById Int?
+  initiatedBy   User?    @relation(fields: [initiatedById], references: [id])
+  provider      String
+  virtualNumber String
+  providerCallId String?
+  status        String   @default("allocated")
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([initiatedById, createdAt])
+  @@index([tagId, createdAt])
+  @@map("calls")
 }

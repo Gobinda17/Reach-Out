@@ -36,6 +36,14 @@ export function UserIcon({ className }) {
   );
 }
 
+export function PhoneIcon({ className }) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M5 4.5h3.5l1.5 4-2 1.5a11 11 0 005 5l1.5-2 4 1.5V18a1.5 1.5 0 01-1.6 1.5A15.5 15.5 0 013.5 6.1 1.5 1.5 0 015 4.5z" />
+    </svg>
+  );
+}
+
 export function ChatIcon({ className }) {
   return (
     <svg {...base} className={className}>

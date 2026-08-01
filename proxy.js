@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/session";
 
-const PROTECTED_PREFIXES = ["/generate", "/admin"];
+const PROTECTED_PREFIXES = ["/generate", "/admin", "/dashboard"];
 
 export default async function proxy(request) {
   const { pathname } = request.nextUrl;
@@ -28,5 +28,5 @@ export default async function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/generate", "/admin/:path*"],
+  matcher: ["/generate", "/admin/:path*", "/dashboard"],
 };

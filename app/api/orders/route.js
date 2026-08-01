@@ -1,10 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
 import { isFree } from "@/lib/products";
 import { getPurchasableProduct } from "@/lib/catalogue";
-import { createRazorpayOrder, razorpayKeyId, RazorpayError } from "@/lib/razorpay";
+import { createRazorpayOrder, razorpayKeyId, paymentDevModeEnabled, RazorpayError } from "@/lib/razorpay";
 import { sanitizeCustomer } from "@/lib/tags";
+import { issuePaidTag } from "@/lib/orders";
 
 export async function POST(request) {
   const user = await getCurrentUser();
@@ -28,6 +30,25 @@ export async function POST(request) {
   const customer = sanitizeCustomer(body?.customer);
   if (!customer.name || !customer.phone) {
     return NextResponse.json({ error: "name and phone are required" }, { status: 400 });
+  }
+
+  if (paymentDevModeEnabled()) {
+    console.warn("[razorpay] RAZORPAY_DEV_MODE is on — issuing the tag without a real payment.");
+
+    const order = await prisma.order.create({
+      data: {
+        userId: user.id,
+        product: product.slug,
+        amountPaise: product.pricePaise,
+        currency: "INR",
+        razorpayOrderId: `dev_${randomUUID()}`,
+        customerData: customer,
+      },
+    });
+
+    const tag = await issuePaidTag(order);
+
+    return NextResponse.json({ devBypass: true, code: tag.code });
   }
 
   try {

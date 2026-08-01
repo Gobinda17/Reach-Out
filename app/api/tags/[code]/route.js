@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/dal";
 
 export async function GET(_request, { params }) {
   const { code } = await params;
@@ -11,6 +12,15 @@ export async function GET(_request, { params }) {
   if (!tag) {
     return NextResponse.json({ error: "Tag not found" }, { status: 404 });
   }
+
+  // This is only ever called once the in-app scanner (app/(marketing)/scan)
+  // has actually decoded a QR code or image, so — unlike the /t/[code] page,
+  // which a <Link> elsewhere could prefetch — recording the scan here can't
+  // be triggered by anything but a real lookup.
+  const user = await getCurrentUser();
+  await prisma.scan.create({
+    data: { tagId: tag.id, scannedById: user?.id ?? null },
+  });
 
   // Public lookup — never return the owner's name, phone, email, address, or
   // notes here. Only non-identifying vehicle context, so a scanner can

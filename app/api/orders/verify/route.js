@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
 import { verifyPaymentSignature, RazorpayError } from "@/lib/razorpay";
-import { createTag } from "@/lib/tags";
+import { issuePaidTag } from "@/lib/orders";
 
 export async function POST(request) {
   const user = await getCurrentUser();
@@ -55,16 +55,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Payment could not be verified." }, { status: 400 });
   }
 
-  const tag = await createTag({
-    customer: order.customerData,
-    product: order.product,
-    userId: order.userId,
-  });
-
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { status: "PAID", razorpayPaymentId: paymentId, tagId: tag.id },
-  });
+  const tag = await issuePaidTag(order, { razorpayPaymentId: paymentId });
 
   return NextResponse.json({ code: tag.code });
 }

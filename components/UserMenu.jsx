@@ -22,7 +22,12 @@ export function UserMenu({ user }) {
           Admin
         </Link>
       )}
-      <span className="text-slate-500 dark:text-slate-400">{user.name || user.phone}</span>
+      <Link
+        href="/dashboard"
+        className="font-medium text-slate-600 transition-colors hover:text-amber-600 dark:text-slate-300 dark:hover:text-yellow-400"
+      >
+        {user.name || user.phone}
+      </Link>
       <button
         onClick={handleLogout}
         className="rounded-full border border-slate-300 px-4 py-1.5 font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"

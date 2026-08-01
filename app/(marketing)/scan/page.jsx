@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { extractTagCode } from "@/lib/customer";
-import { ContactOwnerForm } from "@/components/ContactOwnerForm";
+import { TagContactPanel } from "@/components/TagContactPanel";
 import { StepLabel } from "@/components/StepLabel";
 import { QrIcon, CameraIcon, ShieldIcon } from "@/components/icons";
 
@@ -235,7 +235,7 @@ export default function ScanPage() {
                 <p className="text-xs text-slate-400">
                   The owner&apos;s name and phone number are never shown — not even here.
                 </p>
-                <ContactOwnerForm code={tagCode} />
+                <TagContactPanel code={tagCode} />
               </div>
             ) : (
               <p className="text-sm text-slate-400">

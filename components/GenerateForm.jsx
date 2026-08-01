@@ -15,7 +15,7 @@ const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
 // `products` comes from the server so the picker always shows current prices.
 // The price shown here is display only — the server re-prices every order.
-export function GenerateForm({ initialCustomer, product: initialProduct, products }) {
+export function GenerateForm({ initialCustomer, product: initialProduct, products, devBypass = false }) {
   const [product, setProduct] = useState(initialProduct);
   const [customer, setCustomer] = useState({ ...emptyCustomer, ...initialCustomer });
   const [submitting, setSubmitting] = useState(false);
@@ -25,7 +25,9 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
 
   const free = isFree(product);
   const canGenerate =
-    customer.name.trim() !== "" && customer.phone.trim() !== "" && (free || checkoutReady);
+    customer.name.trim() !== "" &&
+    customer.phone.trim() !== "" &&
+    (free || devBypass || checkoutReady);
 
   async function issueTag(url, body) {
     const res = await fetch(url, {
@@ -49,7 +51,9 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
     setResult({ code, url, qrDataUrl, cardDataUrl });
   }
 
-  // Free tags are issued straight away; paid ones go through Razorpay first.
+  // Free tags are issued straight away; paid ones go through Razorpay first —
+  // unless RAZORPAY_DEV_MODE is on, in which case the server already issued
+  // the tag without a real payment and there's no widget to open.
   async function handleGenerate() {
     setSubmitting(true);
     setError(null);
@@ -61,16 +65,20 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
         setSubmitting(false);
         return;
       }
-      await startPayment();
+      const order = await issueTag("/api/orders", { product: product.slug, customer });
+      if (order.devBypass) {
+        await showTag(order.code);
+        setSubmitting(false);
+        return;
+      }
+      await startPayment(order);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setSubmitting(false);
     }
   }
 
-  async function startPayment() {
-    const order = await issueTag("/api/orders", { product: product.slug, customer });
-
+  async function startPayment(order) {
     const rzp = new window.Razorpay({
       key: order.keyId,
       order_id: order.orderId,
@@ -113,11 +121,13 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
 
   return (
     <>
-      <Script
-        src={CHECKOUT_SRC}
-        onReady={() => setCheckoutReady(true)}
-        onError={() => setError("Could not load the payment window. Check your connection.")}
-      />
+      {!devBypass && (
+        <Script
+          src={CHECKOUT_SRC}
+          onReady={() => setCheckoutReady(true)}
+          onError={() => setError("Could not load the payment window. Check your connection.")}
+        />
+      )}
 
       <div className="grid gap-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-black/5 sm:grid-cols-2 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-4">
@@ -174,12 +184,14 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
               className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-yellow-400 shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-md disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
             >
               {submitting
-                ? free
+                ? free || devBypass
                   ? "Generating…"
                   : "Opening payment…"
                 : free
                   ? "Generate free eTag"
-                  : `Pay ${formatInr(product.pricePaise)} & get tag`}
+                  : devBypass
+                    ? `Get tag (payment bypassed) — ${formatInr(product.pricePaise)}`
+                    : `Pay ${formatInr(product.pricePaise)} & get tag`}
             </button>
           )}
 
@@ -189,7 +201,13 @@ export function GenerateForm({ initialCustomer, product: initialProduct, product
             </p>
           )}
 
-          {!result && !free && (
+          {!result && !free && devBypass && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-yellow-500/10 dark:text-yellow-300">
+              Development mode: Razorpay is bypassed — this issues the tag with no real payment.
+            </p>
+          )}
+
+          {!result && !free && !devBypass && (
             <p className="text-xs text-slate-400">
               Payments are handled by Razorpay. Your tag is created only after the payment is
               confirmed.

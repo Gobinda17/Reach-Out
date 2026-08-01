@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/dal";
 
 const MAX_MESSAGE_LENGTH = 1000;
 
@@ -20,10 +21,17 @@ export async function POST(request, { params }) {
 
   const tag = await prisma.tag.findUnique({
     where: { code: code.toUpperCase() },
-    select: { id: true },
+    select: { id: true, createdById: true },
   });
   if (!tag) {
     return NextResponse.json({ error: "Tag not found" }, { status: 404 });
+  }
+
+  // The scan page is public and anonymous by design, but a logged-in owner
+  // messaging their own tag makes no sense and would just pollute their inbox.
+  const user = await getCurrentUser();
+  if (user && tag.createdById === user.id) {
+    return NextResponse.json({ error: "You can't send a message to your own tag." }, { status: 400 });
   }
 
   await prisma.scanMessage.create({
@@ -32,6 +40,7 @@ export async function POST(request, { params }) {
       message,
       fromName: fromName || null,
       fromPhone: fromPhone || null,
+      fromUserId: user?.id ?? null,
     },
   });
 
