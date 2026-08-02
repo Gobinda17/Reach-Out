@@ -9,8 +9,7 @@ import { productUsage, listProducts } from "@/lib/catalogue";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { setSetting } from "@/lib/settings";
 import { CALL_PROVIDERS } from "@/lib/calling";
-
-const ROLES = ["ADMIN", "SALES", "CUSTOMER"];
+import { ROLES, ADMIN_ROLES, isAdminRole, isPrivilegedRole } from "@/lib/roles";
 
 function fail(message) {
   return { ok: false, error: message };
@@ -20,12 +19,31 @@ function done(message) {
   return { ok: true, message };
 }
 
-// Refuses to remove the last remaining admin — otherwise nobody could reach
-// /admin again without a manual database edit.
+// Refuses to remove the last account that can reach /admin — otherwise nobody
+// could get back in without a manual database edit.
 async function isLastAdmin(userId) {
   const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-  if (target?.role !== "ADMIN") return false;
-  return (await prisma.user.count({ where: { role: "ADMIN" } })) <= 1;
+  if (!isAdminRole(target?.role)) return false;
+  return (await prisma.user.count({ where: { role: { in: ADMIN_ROLES } } })) <= 1;
+}
+
+// Separately: never let the last superadmin go. Admin-level accounts can only be
+// managed by a superadmin, so losing the last one would freeze the admin roster
+// permanently even though /admin itself stayed reachable.
+async function isLastSuperAdmin(userId) {
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (target?.role !== "SUPERADMIN") return false;
+  return (await prisma.user.count({ where: { role: "SUPERADMIN" } })) <= 1;
+}
+
+// The one rule that distinguishes SUPERADMIN from ADMIN: only a superadmin may
+// create, promote, demote or delete an admin-level account. Checked against both
+// the current and the target role, so an ordinary admin can neither promote
+// someone into admin nor touch an existing one.
+async function guardPrivilegedRoles(actor, ...roles) {
+  if (actor.role === "SUPERADMIN") return null;
+  if (!roles.some((role) => isPrivilegedRole(role))) return null;
+  return fail("Only a super admin can manage admin-level accounts.");
 }
 
 // Creating a user here just reserves the phone number and role — there's no
@@ -40,6 +58,9 @@ export async function createUser(_prevState, formData) {
 
   if (!phone) return fail(PHONE_ERROR);
   if (!ROLES.includes(role)) return fail("Invalid role.");
+
+  const denied = await guardPrivilegedRoles(admin, role);
+  if (denied) return denied;
 
   const clash = await prisma.user.findUnique({ where: { phone } });
   if (clash) return fail(`${phone} already has an account.`);
@@ -73,8 +94,15 @@ export async function updateUser(_prevState, formData) {
   if (id === admin.id && role !== existing.role) {
     return fail("You can't change your own role.");
   }
-  if (role !== "ADMIN" && existing.role === "ADMIN" && (await isLastAdmin(id))) {
-    return fail("This is the only admin — promote someone else first.");
+
+  const denied = await guardPrivilegedRoles(admin, existing.role, role);
+  if (denied) return denied;
+
+  if (!isAdminRole(role) && (await isLastAdmin(id))) {
+    return fail("This is the only admin-level account — promote someone else first.");
+  }
+  if (role !== "SUPERADMIN" && (await isLastSuperAdmin(id))) {
+    return fail("This is the only super admin — promote someone else first.");
   }
 
   if (phone !== existing.phone) {
@@ -103,8 +131,18 @@ export async function updateUserRole(_prevState, formData) {
   if (!Number.isInteger(id)) return fail("Invalid user.");
   if (!ROLES.includes(role)) return fail("Invalid role.");
   if (id === admin.id) return fail("You can't change your own role.");
-  if (role !== "ADMIN" && (await isLastAdmin(id))) {
-    return fail("This is the only admin — promote someone else first.");
+
+  const existing = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!existing) return fail("User not found.");
+
+  const denied = await guardPrivilegedRoles(admin, existing.role, role);
+  if (denied) return denied;
+
+  if (!isAdminRole(role) && (await isLastAdmin(id))) {
+    return fail("This is the only admin-level account — promote someone else first.");
+  }
+  if (role !== "SUPERADMIN" && (await isLastSuperAdmin(id))) {
+    return fail("This is the only super admin — promote someone else first.");
   }
 
   const user = await prisma.user.update({ where: { id }, data: { role } });
@@ -121,7 +159,19 @@ export async function deleteUser(_prevState, formData) {
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id)) return fail("Invalid user.");
   if (id === admin.id) return fail("You can't delete your own account.");
-  if (await isLastAdmin(id)) return fail("This is the only admin — promote someone else first.");
+
+  const existing = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!existing) return fail("User not found.");
+
+  const denied = await guardPrivilegedRoles(admin, existing.role);
+  if (denied) return denied;
+
+  if (await isLastAdmin(id)) {
+    return fail("This is the only admin-level account — promote someone else first.");
+  }
+  if (await isLastSuperAdmin(id)) {
+    return fail("This is the only super admin — promote someone else first.");
+  }
 
   // Orders reference users with ON DELETE RESTRICT, so a buyer can't be removed
   // without destroying their payment history. Say so instead of failing opaquely.
@@ -288,23 +338,28 @@ export async function updateTag(_prevState, formData) {
   const code = String(formData.get("code") ?? "").toUpperCase();
   if (!code) return fail("Invalid tag.");
 
-  const customer = sanitizeCustomer(Object.fromEntries(formData));
-  // A bulk-generated tag can be left fully blank (still unclaimed) — but half
-  // a name/phone pair would leave it in a broken in-between state.
-  if (Boolean(customer.name) !== Boolean(customer.phone)) {
-    return fail("Enter both a name and phone number, or leave both blank to keep this tag unclaimed.");
-  }
-  if (customer.phone && !normalizePhone(customer.phone)) {
-    return fail(PHONE_ERROR);
-  }
-
   const existing = await prisma.tag.findUnique({ where: { code } });
   if (!existing) return fail("Tag not found.");
 
-  await prisma.tag.update({
-    where: { code },
-    data: { ...customer, name: customer.name || null, phone: customer.phone || null },
-  });
+  // Unclaimed blank stock has no owner, so there is nothing to edit — and
+  // filling these in from here would hand a tag an owner who never claimed it.
+  // The detail page hides the form for these, but this action is reachable by
+  // a direct POST, so it has to re-check rather than trust the UI.
+  if (!existing.createdById) {
+    return fail("This tag is unclaimed — contact details can only be edited once someone claims it.");
+  }
+
+  const customer = sanitizeCustomer(Object.fromEntries(formData));
+  // Only claimed tags reach this point, and a claimed tag always has an owner
+  // to reach, so neither field may be cleared.
+  if (!customer.name || !customer.phone) {
+    return fail("A claimed tag needs both a name and a phone number.");
+  }
+  if (!normalizePhone(customer.phone)) {
+    return fail(PHONE_ERROR);
+  }
+
+  await prisma.tag.update({ where: { code }, data: customer });
 
   revalidatePath("/admin/tags");
   revalidatePath(`/admin/tags/${code}`);
@@ -360,8 +415,10 @@ export async function markTagsShipped(codes) {
   return { ok: true, message: `Marked ${result.count} tag${result.count === 1 ? "" : "s"} as shipped.` };
 }
 
-// Marks a batch of just-registered tags as downloaded, once their card+address
-// ZIP has actually been exported — same direct-call pattern as markTagsShipped.
+// Marks a batch of tags as downloaded, once their card ZIP has actually been
+// exported — same direct-call pattern as markTagsShipped. Used by both export
+// queues on the tags page: blank stock waiting to be printed (Unclaimed) and
+// scan-claimed tags waiting to be posted (Registered).
 export async function markTagsDownloaded(codes) {
   const admin = await getAdmin();
   if (!admin) return fail("Not authorized.");
@@ -424,4 +481,65 @@ export async function deleteTag(_prevState, formData) {
   revalidatePath("/admin/tags");
   revalidatePath("/admin");
   return done(`Deleted tag ${code}.`);
+}
+
+// --- Seller tag requests -----------------------------------------------------
+
+// Approving mints `quantity` blank tags and assigns them to the seller as
+// stock; rejecting just records the decision. Both go through the same
+// updateMany-with-status-guard so two admins clicking at once can't double-mint:
+// whoever flips PENDING first wins, the other gets count 0 and stops.
+async function decideTagRequest(formData, decision) {
+  const admin = await getAdmin();
+  if (!admin) return fail("Not authorized.");
+
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return fail("Invalid request.");
+
+  const note = String(formData.get("decisionNote") ?? "").trim().slice(0, 500);
+
+  const request = await prisma.tagRequest.findUnique({ where: { id } });
+  if (!request) return fail("Request not found.");
+  if (request.status !== "PENDING") return fail("That request has already been decided.");
+
+  const claimed = await prisma.tagRequest.updateMany({
+    where: { id, status: "PENDING" },
+    data: {
+      status: decision,
+      decidedById: admin.id,
+      decidedAt: new Date(),
+      decisionNote: note || null,
+    },
+  });
+  if (claimed.count === 0) return fail("That request has already been decided.");
+
+  let message = `Rejected request #${id}.`;
+  if (decision === "APPROVED") {
+    for (let i = 0; i < request.quantity; i++) {
+      await createBlankTag({
+        product: request.product,
+        assignedToId: request.sellerId,
+        requestId: request.id,
+      });
+    }
+    message = `Approved request #${id} — ${request.quantity} tag${
+      request.quantity === 1 ? "" : "s"
+    } assigned to the seller.`;
+  }
+
+  revalidatePath("/admin/requests");
+  revalidatePath("/admin/tags");
+  revalidatePath("/admin");
+  revalidatePath("/seller");
+  revalidatePath("/seller/tags");
+  revalidatePath("/seller/requests");
+  return done(message);
+}
+
+export async function approveTagRequest(_prevState, formData) {
+  return decideTagRequest(formData, "APPROVED");
+}
+
+export async function rejectTagRequest(_prevState, formData) {
+  return decideTagRequest(formData, "REJECTED");
 }

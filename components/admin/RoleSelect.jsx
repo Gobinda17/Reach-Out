@@ -2,10 +2,12 @@
 
 import { useActionState, useRef } from "react";
 import { updateUserRole } from "@/app/admin/actions";
+import { ROLE_LABEL } from "@/lib/roles";
 
-const ROLES = ["ADMIN", "SALES", "CUSTOMER"];
-
-export function RoleSelect({ userId, role, disabled, disabledReason }) {
+// `roles` is the set this actor is allowed to grant — an ordinary admin never
+// receives the admin-level ones. The current role is always included so the
+// select can show it, even when the actor may not change it.
+export function RoleSelect({ userId, role, roles, disabled, disabledReason }) {
   const [state, formAction, pending] = useActionState(updateUserRole, null);
   const formRef = useRef(null);
 
@@ -20,9 +22,9 @@ export function RoleSelect({ userId, role, disabled, disabledReason }) {
         onChange={() => formRef.current?.requestSubmit()}
         className="select-control"
       >
-        {ROLES.map((r) => (
+        {(roles.includes(role) ? roles : [role, ...roles]).map((r) => (
           <option key={r} value={r}>
-            {r}
+            {ROLE_LABEL[r] ?? r}
           </option>
         ))}
       </select>

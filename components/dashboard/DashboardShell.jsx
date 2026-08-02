@@ -1,34 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReachIcon } from "@/components/icons";
-import { ADMIN_THEME_KEY } from "@/lib/adminTheme";
+import { DASHBOARD_THEME_KEY } from "@/lib/dashboardTheme";
 
-const NAV = [
-  {
-    label: "Overview",
-    items: [{ href: "/admin", icon: "📊", text: "Dashboard", title: "Dashboard" }],
-  },
-  {
-    label: "Manage",
-    items: [
-      { href: "/admin/orders", icon: "💳", text: "Orders", title: "Orders" },
-      { href: "/admin/products", icon: "💰", text: "Products", title: "Products" },
-      { href: "/admin/tags", icon: "🏷️", text: "Tags", title: "Tags" },
-      { href: "/admin/fulfillment", icon: "📦", text: "Fulfillment", title: "Fulfillment" },
-      { href: "/admin/users", icon: "👥", text: "Users", title: "Users" },
-    ],
-  },
-  {
-    label: "Configure",
-    items: [{ href: "/admin/settings", icon: "⚙️", text: "Settings", title: "Settings" }],
-  },
-];
-
-function isActive(pathname, href) {
-  return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+function isActive(pathname, href, rootHref) {
+  return href === rootHref ? pathname === rootHref : pathname.startsWith(href);
 }
 
 function initials(user) {
@@ -40,25 +19,53 @@ function initials(user) {
   return user.phone.slice(-2);
 }
 
-export function AdminShell({ user, children }) {
+// The staff dashboard chrome — sidebar, topbar, theme toggle — shared by the
+// admin and seller areas. Everything role-specific arrives as props, so the two
+// dashboards can't drift apart visually:
+//
+//   nav          sections of links, [{ label, items: [{ href, icon, text, title }] }]
+//   rootHref     the section root, so its nav item highlights on exact match only
+//   searchHref   where the topbar search submits, as `${searchHref}?q=…`
+//   statusText   the "signed in as" line in the sidebar footer
+//   areaLabel    the sub-line under the topbar breadcrumb
+export function DashboardShell({
+  user,
+  nav,
+  rootHref,
+  searchHref,
+  searchPlaceholder,
+  statusText,
+  areaLabel,
+  children,
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
   const [collapsed, setCollapsed] = useState(false);
   const [compact, setCompact] = useState(false);
   const [query, setQuery] = useState("");
-  const rootRef = useRef(null);
 
-  // The theme lives on the DOM node rather than in React state: the bootstrap
-  // script above may already have changed it, and re-deriving it into state
-  // would mean writing state from an effect. Which glyph shows is decided by CSS.
-  function toggleTheme() {
-    const root = rootRef.current;
-    if (!root) return;
-    const next = root.dataset.theme === "light" ? "dark" : "light";
-    root.dataset.theme = next;
+  // A lazy initializer, not an effect: it reads localStorage during the very
+  // first client render, so arriving here by client-side navigation (where the
+  // inline bootstrap script never executes) still paints the right theme with
+  // no flash. On a fresh load the server renders "dark", the bootstrap script
+  // has already corrected the DOM, and this initializer computes the same value
+  // the script used — so React and the DOM agree.
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "dark";
     try {
-      localStorage.setItem(ADMIN_THEME_KEY, next);
+      const stored = localStorage.getItem(DASHBOARD_THEME_KEY);
+      return stored === "light" || stored === "dark" ? stored : "dark";
+    } catch {
+      return "dark";
+    }
+  });
+
+  function toggleTheme() {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    try {
+      localStorage.setItem(DASHBOARD_THEME_KEY, next);
     } catch {
       // localStorage can be unavailable (private mode); the toggle still works
       // for this session.
@@ -71,22 +78,24 @@ export function AdminShell({ user, children }) {
     router.refresh();
   }
 
-  // Tag search is the only global search that means anything here, so the topbar
-  // field routes into the tags view rather than pretending to search everything.
+  // Tag search is the only search that means anything in either dashboard, so
+  // the topbar field routes into that area's tags view rather than pretending
+  // to search everything.
   function handleSearch(e) {
     e.preventDefault();
     const q = query.trim();
-    router.push(q ? `/admin/tags?q=${encodeURIComponent(q)}` : "/admin/tags");
+    router.push(q ? `${searchHref}?q=${encodeURIComponent(q)}` : searchHref);
   }
 
-  const current = NAV.flatMap((s) => s.items).find((i) => isActive(pathname, i.href));
+  const current = nav.flatMap((s) => s.items).find((i) => isActive(pathname, i.href, rootHref));
 
   return (
     <div
-      id="adminApp"
-      ref={rootRef}
       className="admin-app"
-      data-theme="dark"
+      // The bootstrap script may have already set this attribute before React
+      // hydrates; tell React to keep the DOM's value rather than "correcting" it.
+      suppressHydrationWarning
+      data-theme={theme}
       data-compact={compact ? "true" : "false"}
     >
       <aside className={`sidebar${collapsed ? " collapsed" : ""}`}>
@@ -108,7 +117,7 @@ export function AdminShell({ user, children }) {
         </div>
 
         <nav className="sidebar-nav">
-          {NAV.map((section) => (
+          {nav.map((section) => (
             <div key={section.label} className="nav-section">
               <span className="nav-label">{section.label}</span>
               {section.items.map((item) => (
@@ -116,8 +125,8 @@ export function AdminShell({ user, children }) {
                   key={item.href}
                   href={item.href}
                   title={item.text}
-                  className={`nav-item${isActive(pathname, item.href) ? " active" : ""}`}
-                  aria-current={isActive(pathname, item.href) ? "page" : undefined}
+                  className={`nav-item${isActive(pathname, item.href, rootHref) ? " active" : ""}`}
+                  aria-current={isActive(pathname, item.href, rootHref) ? "page" : undefined}
                 >
                   <span className="nav-icon">{item.icon}</span>
                   <span className="nav-text">{item.text}</span>
@@ -130,7 +139,7 @@ export function AdminShell({ user, children }) {
         <div className="sidebar-footer">
           <div className="status-pill">
             <span className="status-dot" />
-            <span className="status-text">Signed in as admin</span>
+            <span className="status-text">{statusText}</span>
           </div>
           <button
             type="button"
@@ -156,8 +165,8 @@ export function AdminShell({ user, children }) {
         <header className="topbar">
           <div className="topbar-left">
             <div className="breadcrumb">
-              <span className="crumb-main">{current?.title ?? "Admin"}</span>
-              <span className="crumb-sub">Reach-Out admin</span>
+              <span className="crumb-main">{current?.title ?? nav[0]?.items[0]?.title}</span>
+              <span className="crumb-sub">{areaLabel}</span>
             </div>
           </div>
           <div className="topbar-center">
@@ -167,7 +176,7 @@ export function AdminShell({ user, children }) {
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search tags by code, name, phone…"
+                placeholder={searchPlaceholder}
                 aria-label="Search tags"
               />
             </form>

@@ -3,6 +3,7 @@ import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 import { productNameMap } from "@/lib/catalogue";
 import { formatAmount } from "@/lib/products";
+import { isAdminRole } from "@/lib/roles";
 import { PrintInvoiceButton } from "@/components/PrintInvoiceButton";
 import { Logo } from "@/components/Logo";
 
@@ -32,7 +33,7 @@ export default async function InvoicePage({ params }) {
   // Only the order's own buyer or an admin can view/download it — this is a
   // billing document, not public like the tag contact card.
   const isOwner = order.userId === session.userId;
-  const isAdmin = session.role === "ADMIN";
+  const isAdmin = isAdminRole(session.role);
   if (!isOwner && !isAdmin) notFound();
 
   const names = await productNameMap();

@@ -29,6 +29,7 @@ async function getStats() {
 
   return {
     userCount,
+    superAdminCount: countFor(usersByRole, "role", "SUPERADMIN"),
     adminCount: countFor(usersByRole, "role", "ADMIN"),
     salesCount: countFor(usersByRole, "role", "SALES"),
     customerCount: countFor(usersByRole, "role", "CUSTOMER"),
@@ -86,7 +87,7 @@ export default async function AdminOverviewPage() {
     {
       label: "Users",
       value: stats.userCount,
-      sub: `${stats.adminCount} admin · ${stats.salesCount} seller`,
+      sub: `${stats.superAdminCount + stats.adminCount} admin · ${stats.salesCount} seller`,
       tagText: "Accounts",
       tagClass: "kpi-tag neutral",
     },
@@ -177,6 +178,7 @@ export default async function AdminOverviewPage() {
             </header>
             <dl className="stat-list">
               {[
+                ["Super admins", stats.superAdminCount],
                 ["Admins", stats.adminCount],
                 ["Sellers", stats.salesCount],
                 ["Customers", stats.customerCount],

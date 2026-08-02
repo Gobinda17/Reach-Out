@@ -4,9 +4,11 @@ import { getAdmin } from "@/lib/dal";
 import { RoleSelect } from "@/components/admin/RoleSelect";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { UserForm } from "@/components/admin/UserForm";
+import { ROLES, ADMIN_ROLES, ROLE_LABEL, isAdminRole, isPrivilegedRole } from "@/lib/roles";
 import { deleteUser } from "../actions";
 
 const ROLE_PILL = {
+  SUPERADMIN: "pill pill-soft pill-red",
   ADMIN: "pill pill-soft pill-amber",
   SALES: "pill pill-soft pill-green",
   CUSTOMER: "pill pill-soft",
@@ -34,8 +36,14 @@ export default async function AdminUsersPage({ searchParams }) {
         _count: { select: { tags: true, orders: true } },
       },
     }),
-    prisma.user.count({ where: { role: "ADMIN" } }),
+    prisma.user.count({ where: { role: { in: ADMIN_ROLES } } }),
   ]);
+
+  // Only a super admin may grant or touch an admin-level role, so an ordinary
+  // admin is never offered one. The server action enforces this independently —
+  // this just keeps the UI honest about what will be accepted.
+  const isSuper = admin?.role === "SUPERADMIN";
+  const grantableRoles = isSuper ? ROLES : ROLES.filter((r) => !isPrivilegedRole(r));
 
   return (
     <>
@@ -88,8 +96,14 @@ export default async function AdminUsersPage({ searchParams }) {
             )}
             {users.map((u) => {
               const isSelf = u.id === admin?.id;
-              const isLastAdmin = u.role === "ADMIN" && adminCount <= 1;
-              const locked = isSelf || isLastAdmin;
+              const isLastAdmin = isAdminRole(u.role) && adminCount <= 1;
+              const needsSuper = isPrivilegedRole(u.role) && !isSuper;
+              const locked = isSelf || isLastAdmin || needsSuper;
+              const lockReason = isSelf
+                ? "You can't change your own role."
+                : needsSuper
+                  ? "Only a super admin can manage admin-level accounts."
+                  : "This is the only admin-level account.";
 
               return (
                 <tr key={u.id}>
@@ -105,16 +119,15 @@ export default async function AdminUsersPage({ searchParams }) {
                   </td>
                   <td>{u.name || <span className="muted">—</span>}</td>
                   <td>
-                    <span className={ROLE_PILL[u.role]}>{u.role}</span>
+                    <span className={ROLE_PILL[u.role]}>{ROLE_LABEL[u.role] ?? u.role}</span>
                   </td>
                   <td>
                     <RoleSelect
                       userId={u.id}
                       role={u.role}
+                      roles={grantableRoles}
                       disabled={locked}
-                      disabledReason={
-                        isSelf ? "You can't change your own role." : "This is the only admin."
-                      }
+                      disabledReason={lockReason}
                     />
                   </td>
                   <td className="muted">{u._count.tags}</td>
@@ -127,9 +140,11 @@ export default async function AdminUsersPage({ searchParams }) {
                         title={
                           isSelf
                             ? "You can't delete your own account."
-                            : isLastAdmin
-                              ? "This is the only admin."
-                              : "Users with orders can't be deleted."
+                            : needsSuper
+                              ? "Only a super admin can delete admin-level accounts."
+                              : isLastAdmin
+                                ? "This is the only admin-level account."
+                                : "Users with orders can't be deleted."
                         }
                       >
                         —
@@ -154,10 +169,13 @@ export default async function AdminUsersPage({ searchParams }) {
       <header className="card-header">
         <div>
           <h2>Add a user</h2>
-          <p>Create an account ahead of time — useful for staff.</p>
+          <p>
+            Create an account ahead of time — useful for staff.
+            {!isSuper && " Only a super admin can create admin-level accounts."}
+          </p>
         </div>
       </header>
-      <UserForm />
+      <UserForm roles={grantableRoles} />
     </article>
     </>
   );

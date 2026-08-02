@@ -11,14 +11,18 @@ import { downloadTagCardsZip, downloadTagCardsZipWithAddresses } from "@/lib/tag
 // product names already resolved), so this stays a client component without
 // needing to serialize Prisma rows across the boundary.
 //
-// mode="registered" is for tags whose name/phone/address only exist because
-// someone scanned and claimed them (the Registered tab): the bulk download
-// includes an addresses.csv alongside the cards, and — since these are the
-// ones admin still needs to physically process — marks them downloaded
-// afterward so the tab can show what's already been pulled.
+// Two things vary by mode, and they aren't the same thing:
+//
+// - mode="registered" (tags someone scanned and claimed) is the only mode whose
+//   export needs an addresses.csv beside the cards, since it's the only one with
+//   an owner to post to.
+// - "registered" and "unclaimed" are both export queues, so both show a
+//   Downloaded column and mark rows downloaded once a ZIP is actually pulled.
+//   ("all" mixes the two, so it stays a plain list.)
 export function TagsTable({ tags, emptyMessage, mode = "default" }) {
   const router = useRouter();
-  const registered = mode === "registered";
+  const withAddresses = mode === "registered";
+  const tracksDownload = mode === "registered" || mode === "unclaimed";
   const [selected, setSelected] = useState(() => new Set());
   const [downloading, setDownloading] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -46,14 +50,19 @@ export function TagsTable({ tags, emptyMessage, mode = "default" }) {
   async function handleDownload() {
     setDownloading(true);
     try {
-      if (registered) {
-        await downloadTagCardsZipWithAddresses(selectedTags, `tags-${selectedCodes.length}.zip`);
+      const filename = `tags-${selectedCodes.length}.zip`;
+      if (withAddresses) {
+        await downloadTagCardsZipWithAddresses(selectedTags, filename);
+      } else {
+        await downloadTagCardsZip(selectedCodes, filename);
+      }
+      // Only after the ZIP actually resolved — a failed export shouldn't leave
+      // rows marked as pulled.
+      if (tracksDownload) {
         startTransition(async () => {
           await markTagsDownloaded(selectedCodes);
           router.refresh();
         });
-      } else {
-        await downloadTagCardsZip(selectedCodes, `tags-${selectedCodes.length}.zip`);
       }
     } finally {
       setDownloading(false);
@@ -72,11 +81,11 @@ export function TagsTable({ tags, emptyMessage, mode = "default" }) {
           >
             {downloading
               ? "Zipping…"
-              : registered
+              : withAddresses
                 ? `Download ZIP with addresses (${selected.size})`
                 : `Download as ZIP (${selected.size})`}
           </button>
-          {registered && isPending && <span className="kpi-sub">Marking downloaded…</span>}
+          {tracksDownload && isPending && <span className="kpi-sub">Marking downloaded…</span>}
         </div>
       )}
 
@@ -98,16 +107,16 @@ export function TagsTable({ tags, emptyMessage, mode = "default" }) {
               <th>Status</th>
               <th>Name</th>
               <th>Phone</th>
-              {registered ? <th>Address</th> : <th>Created by</th>}
+              {withAddresses ? <th>Address</th> : <th>Created by</th>}
               <th>Created</th>
-              {registered && <th>Downloaded</th>}
+              {tracksDownload && <th>Downloaded</th>}
               <th />
             </tr>
           </thead>
           <tbody>
             {tags.length === 0 ? (
               <tr>
-                <td className="empty-row" colSpan={registered ? 10 : 9}>
+                <td className="empty-row" colSpan={tracksDownload ? 10 : 9}>
                   {emptyMessage}
                 </td>
               </tr>
@@ -137,7 +146,7 @@ export function TagsTable({ tags, emptyMessage, mode = "default" }) {
                   </td>
                   <td>{tag.name}</td>
                   <td className="mono muted">{tag.phone}</td>
-                  {registered ? (
+                  {withAddresses ? (
                     <td className="muted" style={{ whiteSpace: "pre-line" }}>
                       {tag.address}
                     </td>
@@ -145,7 +154,7 @@ export function TagsTable({ tags, emptyMessage, mode = "default" }) {
                     <td className="mono muted">{tag.createdByPhone}</td>
                   )}
                   <td className="muted">{tag.dateLabel}</td>
-                  {registered && (
+                  {tracksDownload && (
                     <td>
                       {tag.downloaded ? (
                         <span className="pill pill-soft pill-green" title={tag.downloadedLabel}>

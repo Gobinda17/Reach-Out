@@ -3,11 +3,14 @@
 import { useActionState } from "react";
 import { createUser, updateUser } from "@/app/admin/actions";
 import { PhoneField } from "@/components/PhoneField";
+import { ROLE_LABEL } from "@/lib/roles";
 
-const ROLES = ["CUSTOMER", "SALES", "ADMIN"];
-
-// `user` absent → create form. Present → edit form.
-export function UserForm({ user, isSelf }) {
+// `user` absent → create form. Present → edit form. `roles` is the set this
+// actor may grant (see RoleSelect). `roleLockedReason`, when set, freezes the
+// role picker and says why — an admin editing their own account, or an ordinary
+// admin looking at an admin-level one.
+export function UserForm({ user, roles, roleLockedReason }) {
+  const roleLocked = Boolean(roleLockedReason);
   const editing = Boolean(user);
   const [state, formAction, pending] = useActionState(editing ? updateUser : createUser, null);
 
@@ -31,14 +34,14 @@ export function UserForm({ user, isSelf }) {
           <select
             name="role"
             defaultValue={user?.role ?? "CUSTOMER"}
-            disabled={isSelf}
-            title={isSelf ? "You can't change your own role." : undefined}
+            disabled={roleLocked}
+            title={roleLockedReason}
             className="select-control"
             style={{ padding: "0.4rem 0.6rem", fontSize: "0.82rem" }}
           >
-            {ROLES.map((r) => (
+            {(user && !roles.includes(user.role) ? [user.role, ...roles] : roles).map((r) => (
               <option key={r} value={r}>
-                {r}
+                {ROLE_LABEL[r] ?? r}
               </option>
             ))}
           </select>
@@ -47,7 +50,8 @@ export function UserForm({ user, isSelf }) {
 
       {/* A disabled select submits nothing, so the current role has to ride along
           or the action would see an empty value. */}
-      {isSelf && <input type="hidden" name="role" value={user.role} />}
+      {roleLocked && user && <input type="hidden" name="role" value={user.role} />}
+      {roleLocked && <p className="kpi-sub">{roleLockedReason}</p>}
 
       <div className="form-actions">
         <button type="submit" disabled={pending} className="pill-btn">

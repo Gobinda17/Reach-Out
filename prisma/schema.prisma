@@ -8,6 +8,9 @@ datasource db {
 }
 
 enum Role {
+  // Everything ADMIN can do, plus the exclusive right to create, promote,
+  // demote or delete admin-level accounts. See lib/roles.js.
+  SUPERADMIN
   ADMIN
   SALES
   CUSTOMER
@@ -19,6 +22,12 @@ enum OrderStatus {
   FAILED
 }
 
+enum TagRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   phone     String   @unique
@@ -27,13 +36,46 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tags     Tag[]
+  tags     Tag[]         @relation("TagOwner")
   orders   Order[]
   scans    Scan[]
   messages ScanMessage[]
   calls    Call[]
 
+  // Seller-side: stock a seller holds, the requests they raised for it, and
+  // (for admins) the requests they ruled on.
+  stock            Tag[]        @relation("SellerStock")
+  tagRequests      TagRequest[] @relation("RequestedBy")
+  requestDecisions TagRequest[] @relation("DecidedBy")
+
   @@map("users")
+}
+
+// A seller asking admin for a batch of blank tags to hand out. Approving one
+// mints that many unclaimed tags and assigns them to the seller as stock; the
+// request itself stays as the paper trail for how they got there.
+model TagRequest {
+  id       Int    @id @default(autoincrement())
+  sellerId Int
+  seller   User   @relation("RequestedBy", fields: [sellerId], references: [id])
+  product  String
+  quantity Int
+  note     String?
+
+  status       TagRequestStatus @default(PENDING)
+  decidedById  Int?
+  decidedBy    User?            @relation("DecidedBy", fields: [decidedById], references: [id])
+  decidedAt    DateTime?
+  decisionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags Tag[]
+
+  @@index([sellerId, createdAt])
+  @@index([status, createdAt])
+  @@map("tag_requests")
 }
 
 model Order {
@@ -114,7 +156,15 @@ model Tag {
   address          String?
   notes            String?
   createdById      Int?
-  createdBy        User?     @relation(fields: [createdById], references: [id])
+  createdBy        User?     @relation("TagOwner", fields: [createdById], references: [id])
+  // Seller stock. Orthogonal to createdById: assignedTo is the seller holding
+  // the physical tag to hand out, createdById is the end customer who ends up
+  // claiming it. A tag can have both — the seller keeps credit for the sale.
+  assignedToId     Int?
+  assignedTo       User?     @relation("SellerStock", fields: [assignedToId], references: [id])
+  assignedAt       DateTime?
+  requestId        Int?
+  request          TagRequest? @relation(fields: [requestId], references: [id])
   // Set once, the moment an unclaimed tag is claimed — unlike updatedAt, later
   // edits (admin corrections, etc.) don't overwrite this.
   claimedAt        DateTime?
@@ -133,6 +183,7 @@ model Tag {
   calls    Call[]
   order    Order?
 
+  @@index([assignedToId, createdAt])
   @@map("tags")
 }
 

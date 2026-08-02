@@ -6,17 +6,35 @@ import { TagsTable } from "@/components/admin/TagsTable";
 
 const PAGE_SIZE = 25;
 
+// Each tab carries its own filter and empty-state copy, so the tab list, the
+// count queries and the active filter can't drift apart as tabs are added.
 const STATUS_TABS = [
-  { key: "all", label: "All" },
-  { key: "unclaimed", label: "Unclaimed" },
-  { key: "claimed", label: "Claimed" },
-  { key: "registered", label: "Registered" },
+  { key: "all", label: "All", where: {}, empty: "No tags yet." },
+  {
+    key: "unclaimed",
+    label: "Unclaimed",
+    where: { createdById: null },
+    empty: "No unclaimed tags — everything printed so far has been claimed.",
+  },
+  {
+    key: "claimed",
+    label: "Claimed",
+    where: { createdById: { not: null } },
+    empty: "No claimed tags yet.",
+  },
+  {
+    key: "registered",
+    label: "Registered",
+    where: { claimedAt: { not: null } },
+    empty: "No tags registered by scanning yet.",
+  },
 ];
 
 export default async function AdminTagsPage({ searchParams }) {
   const { q, page: pageParam, status: statusParam } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
-  const status = STATUS_TABS.some((t) => t.key === statusParam) ? statusParam : "all";
+  const activeTab = STATUS_TABS.find((t) => t.key === statusParam) ?? STATUS_TABS[0];
+  const status = activeTab.key;
   const products = await listProducts();
 
   const searchWhere = query
@@ -30,31 +48,17 @@ export default async function AdminTagsPage({ searchParams }) {
       }
     : {};
 
-  const statusWhere =
-    status === "unclaimed"
-      ? { createdById: null }
-      : status === "claimed"
-        ? { createdById: { not: null } }
-        : status === "registered"
-          ? { claimedAt: { not: null } }
-          : {};
-
-  const where = { ...searchWhere, ...statusWhere };
+  const where = { ...searchWhere, ...activeTab.where };
 
   const names = await productNameMap();
 
-  const [total, unclaimedCount, claimedCount, registeredCount] = await Promise.all([
-    prisma.tag.count({ where }),
-    prisma.tag.count({ where: { ...searchWhere, createdById: null } }),
-    prisma.tag.count({ where: { ...searchWhere, createdById: { not: null } } }),
-    prisma.tag.count({ where: { ...searchWhere, claimedAt: { not: null } } }),
-  ]);
-  const tabCounts = {
-    all: unclaimedCount + claimedCount,
-    unclaimed: unclaimedCount,
-    claimed: claimedCount,
-    registered: registeredCount,
-  };
+  // Every tab's count respects the current search term, so the numbers describe
+  // the result set the user is actually looking at.
+  const counts = await Promise.all(
+    STATUS_TABS.map((tab) => prisma.tag.count({ where: { ...searchWhere, ...tab.where } }))
+  );
+  const tabCounts = Object.fromEntries(STATUS_TABS.map((tab, i) => [tab.key, counts[i]]));
+  const total = tabCounts[status];
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const requestedPage = Number(pageParam);
@@ -92,15 +96,13 @@ export default async function AdminTagsPage({ searchParams }) {
     downloadedLabel: tag.downloadedAt ? tag.downloadedAt.toLocaleString() : null,
   }));
 
-  const emptyMessage = query
-    ? "No tags match that search."
-    : status === "unclaimed"
-      ? "No unclaimed tags — everything printed so far has been claimed."
-      : status === "claimed"
-        ? "No claimed tags yet."
-        : status === "registered"
-          ? "No tags registered by scanning yet."
-          : "No tags yet.";
+  const emptyMessage = query ? "No tags match that search." : activeTab.empty;
+
+  // Both of these tabs are export queues — blank stock waiting to be printed,
+  // and scan-claimed tags waiting to be posted — so both track which rows have
+  // already been pulled. Only "registered" needs addresses in the export.
+  const tableMode =
+    status === "registered" ? "registered" : status === "unclaimed" ? "unclaimed" : "default";
 
   return (
     <>
@@ -160,7 +162,7 @@ export default async function AdminTagsPage({ searchParams }) {
           </button>
         </form>
 
-        <TagsTable tags={rows} emptyMessage={emptyMessage} mode={status === "registered" ? "registered" : "default"} />
+        <TagsTable tags={rows} emptyMessage={emptyMessage} mode={tableMode} />
 
         {totalPages > 1 && (
           <div className="chip-row" style={{ marginTop: "0.75rem", alignItems: "center" }}>

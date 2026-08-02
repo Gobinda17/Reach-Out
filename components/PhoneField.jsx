@@ -8,6 +8,9 @@ import {
   detectCountryIso2,
   subscribeToLocale,
   getServerCountryIso2,
+  isCompleteNsn,
+  maxNsnLength,
+  nsnPlaceholder,
 } from "@/lib/countryCodes";
 import { normalizePhone } from "@/lib/phone";
 
@@ -55,23 +58,33 @@ export function PhoneField({
 
   const countryIso2 = countryOverride ?? detectedIso2;
   const country = findCountry(countryIso2);
-  const composedValue =
-    digits.length === 10 ? (normalizePhone(`+${country.dialCode}${digits}`) ?? "") : "";
+  const maxDigits = maxNsnLength(country);
+  const composedValue = isCompleteNsn(country, digits)
+    ? (normalizePhone(`+${country.dialCode}${digits}`) ?? "")
+    : "";
 
   function emit(nextDigits, nextCountry) {
-    const composed = nextDigits.length === 10 ? normalizePhone(`+${nextCountry.dialCode}${nextDigits}`) : null;
+    const composed = isCompleteNsn(nextCountry, nextDigits)
+      ? normalizePhone(`+${nextCountry.dialCode}${nextDigits}`)
+      : null;
     onChange?.(composed ?? "");
   }
 
   function handleDigitsChange(raw) {
-    const clean = raw.replace(/\D/g, "").slice(0, 10);
+    const clean = raw.replace(/\D/g, "").slice(0, maxDigits);
     setDigits(clean);
     emit(clean, country);
   }
 
   function handleCountryChange(iso2) {
+    const nextCountry = findCountry(iso2);
+    // Switching to a country with shorter numbers (e.g. India 10 → Qatar 8)
+    // must trim, or the field would sit permanently over-length and never
+    // compose a valid number.
+    const trimmed = digits.slice(0, maxNsnLength(nextCountry));
     setCountryOverride(iso2);
-    emit(digits, findCountry(iso2));
+    setDigits(trimmed);
+    emit(trimmed, nextCountry);
   }
 
   return (
@@ -98,11 +111,11 @@ export function PhoneField({
         type="tel"
         inputMode="numeric"
         autoComplete="tel-national"
-        pattern="\d{10}"
-        maxLength={10}
+        pattern={`\\d{${Math.min(...country.nsnLengths)},${maxDigits}}`}
+        maxLength={maxDigits}
         required={required}
         disabled={disabled}
-        placeholder="10-digit mobile number"
+        placeholder={nsnPlaceholder(country)}
         value={digits}
         onChange={(e) => handleDigitsChange(e.target.value)}
         className={`min-w-0 flex-1 rounded-r-xl bg-transparent px-3.5 py-2.5 outline-none ${inputClassName}`}

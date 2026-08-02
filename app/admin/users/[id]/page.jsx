@@ -6,6 +6,7 @@ import { productNameMap } from "@/lib/catalogue";
 import { formatAmount } from "@/lib/products";
 import { UserForm } from "@/components/admin/UserForm";
 import { DeleteButton } from "@/components/admin/DeleteButton";
+import { ROLES, ADMIN_ROLES, ROLE_LABEL, isAdminRole, isPrivilegedRole } from "@/lib/roles";
 import { deleteUser } from "../../actions";
 
 const STATUS_PILL = {
@@ -36,12 +37,18 @@ export default async function AdminUserDetailPage({ params }) {
   if (!user) notFound();
 
   const isSelf = user.id === admin?.id;
-  const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
-  const isLastAdmin = user.role === "ADMIN" && adminCount <= 1;
-  const canDelete = !isSelf && !isLastAdmin && user._count.orders === 0;
+  const adminCount = await prisma.user.count({ where: { role: { in: ADMIN_ROLES } } });
+  const isLastAdmin = isAdminRole(user.role) && adminCount <= 1;
+
+  // Managing an admin-level account is superadmin-only; the server action
+  // enforces the same rule independently.
+  const isSuper = admin?.role === "SUPERADMIN";
+  const needsSuper = isPrivilegedRole(user.role) && !isSuper;
+  const grantableRoles = isSuper ? ROLES : ROLES.filter((r) => !isPrivilegedRole(r));
+  const canDelete = !isSelf && !isLastAdmin && !needsSuper && user._count.orders === 0;
 
   const facts = [
-    ["Role", user.role],
+    ["Role", ROLE_LABEL[user.role] ?? user.role],
     ["Joined", user.createdAt.toLocaleString()],
     ["Tags created", user._count.tags],
     ["Orders", user._count.orders],
@@ -71,9 +78,11 @@ export default async function AdminUserDetailPage({ params }) {
               <span className="pill pill-soft">
                 {isSelf
                   ? "This is you"
-                  : isLastAdmin
-                    ? "Only admin — can't be deleted"
-                    : "Has orders — can't be deleted"}
+                  : needsSuper
+                    ? "Super admin only"
+                    : isLastAdmin
+                      ? "Only admin-level account — can't be deleted"
+                      : "Has orders — can't be deleted"}
               </span>
             )}
           </div>
@@ -99,7 +108,17 @@ export default async function AdminUserDetailPage({ params }) {
             </p>
           </div>
         </header>
-        <UserForm user={user} isSelf={isSelf} />
+        <UserForm
+          user={user}
+          roles={grantableRoles}
+          roleLockedReason={
+            isSelf
+              ? "You can't change your own role."
+              : needsSuper
+                ? "Only a super admin can change an admin-level account's role."
+                : undefined
+          }
+        />
       </article>
 
       <article className="card">

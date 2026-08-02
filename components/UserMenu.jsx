@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDownIcon } from "./icons";
+import { isAdminRole } from "@/lib/roles";
 
 function initials(user) {
   const source = user.name?.trim();
@@ -50,13 +51,22 @@ export function UserMenu({ user }) {
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg shadow-black/10 dark:border-slate-800 dark:bg-slate-900">
-          {user.role === "ADMIN" && (
+          {isAdminRole(user.role) && (
             <Link
-              href="/admin/users"
+              href="/admin"
               onClick={() => setOpen(false)}
               className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
             >
               Admin panel
+            </Link>
+          )}
+          {user.role === "SALES" && (
+            <Link
+              href="/seller"
+              onClick={() => setOpen(false)}
+              className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
+            >
+              Seller dashboard
             </Link>
           )}
           <Link

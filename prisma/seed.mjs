@@ -12,6 +12,12 @@ import { normalizePhone } from "../lib/phone.js";
 const prisma = new PrismaClient();
 
 const STAFF = [
+  {
+    envKey: "SEED_SUPERADMIN_PHONE",
+    fallback: "+919000000000",
+    name: "Super admin",
+    role: "SUPERADMIN",
+  },
   { envKey: "SEED_ADMIN_PHONE", fallback: "+919000000001", name: "Admin", role: "ADMIN" },
   { envKey: "SEED_SALES_PHONE", fallback: "+919000000002", name: "Seller", role: "SALES" },
 ];
@@ -34,10 +40,10 @@ async function main() {
       create: { phone, role: staff.role, name: staff.name },
     });
 
-    console.log(`  ${staff.role.padEnd(5)}  ${user.phone}  (${user.name})`);
+    console.log(`  ${staff.role.padEnd(10)}  ${user.phone}  (${user.name})`);
   }
 
-  console.log("\nLog in at /login with either number.");
+  console.log("\nLog in at /login with any of these numbers.");
   console.log(
     process.env.OTP_DEV_MODE === "true"
       ? "OTP_DEV_MODE is on — the code is 111111."

@@ -17,6 +17,7 @@ export default async function AdminTagDetailPage({ params }) {
     where: { code: code.toUpperCase() },
     include: {
       createdBy: { select: { phone: true, role: true } },
+      assignedTo: { select: { id: true, phone: true } },
       order: true,
     },
   });
@@ -24,6 +25,9 @@ export default async function AdminTagDetailPage({ params }) {
   if (!tag) notFound();
 
   const names = await productNameMap();
+  // No owner row means this is bulk-generated blank stock, not a tag anyone
+  // has taken ownership of yet — the same test the tags list uses.
+  const claimed = Boolean(tag.createdById);
 
   const hdrs = await headers();
   const host = hdrs.get("host") ?? "localhost:3000";
@@ -36,8 +40,14 @@ export default async function AdminTagDetailPage({ params }) {
 
   const facts = [
     ["Product", names.get(tag.product) ?? tag.product],
-    ["Status", tag.createdById ? "Claimed" : "Unclaimed"],
+    ["Status", claimed ? "Claimed" : "Unclaimed"],
     ["Created by", tag.createdBy?.phone ?? "—"],
+    [
+      "Seller stock",
+      tag.assignedTo
+        ? `${tag.assignedTo.phone}${tag.requestId ? ` · request #${tag.requestId}` : ""}`
+        : "— (house stock)",
+    ],
     ["Claimed at", tag.claimedAt ? tag.claimedAt.toLocaleString() : "— (not yet claimed)"],
     ["Created", tag.createdAt.toLocaleString()],
     ["Last updated", tag.updatedAt.toLocaleString()],
@@ -113,7 +123,22 @@ export default async function AdminTagDetailPage({ params }) {
             <p>These are the details anyone scanning this tag will see.</p>
           </div>
         </header>
-        <TagEditForm tag={tag} />
+        {claimed ? (
+          <TagEditForm tag={tag} />
+        ) : (
+          // Blank stock has no owner yet, so there are no contact details to
+          // edit — the first person to scan it claims it from /t/[code]/claim
+          // and fills these in themselves. updateTag() rejects this case too;
+          // hiding the form here is only the first of the two gates.
+          <p className="kpi-sub" style={{ margin: 0 }}>
+            This tag is unclaimed blank stock — it has no owner, so there are no contact details
+            to edit. Whoever scans it first claims it at{" "}
+            <Link href={`/t/${tag.code}`} className="admin-link">
+              /t/{tag.code}
+            </Link>{" "}
+            and enters their own details.
+          </p>
+        )}
       </article>
     </>
   );
