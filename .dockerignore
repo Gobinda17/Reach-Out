@@ -1,0 +1,19 @@
+# Anything not needed to build the image. Keeping this tight matters for more
+# than speed: .env holds SESSION_SECRET and the Razorpay keys, and COPY . . in
+# the builder stage would otherwise bake them into a layer.
+.env
+.env.*
+!.env.example
+
+node_modules
+.next
+.git
+.gitignore
+
+npm-debug.log*
+*.md
+!README.md
+
+Dockerfile
+.dockerignore
+docker-compose.yml

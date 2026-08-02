@@ -76,8 +76,11 @@ function Benefit({ icon, title, body }) {
   );
 }
 
-export function FreeEtagWizard({ captcha }) {
+export function FreeEtagWizard() {
   const [step, setStep] = useState(0);
+  // Fetched per visitor when the verify step is reached, and again after a
+  // wrong answer, so every attempt gets its own sum.
+  const [captcha, setCaptcha] = useState(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -90,6 +93,17 @@ export function FreeEtagWizard({ captcha }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+
+  async function loadCaptcha() {
+    setCaptchaAnswer("");
+    setCaptcha(null);
+    try {
+      const res = await fetch("/api/etag/captcha", { cache: "no-store" });
+      setCaptcha(await res.json());
+    } catch {
+      setError("Couldn't load the verification question. Check your connection.");
+    }
+  }
 
   const payload = { name, email, phone, vehicleReg, vehicleType };
 
@@ -115,12 +129,15 @@ export function FreeEtagWizard({ captcha }) {
 
   async function sendOtp() {
     const data = await post("/api/etag/request-otp", {
-      captchaToken: captcha.token,
+      captchaToken: captcha?.token,
       captchaAnswer,
     });
     if (data) {
       setOtp("");
       setOtpOpen(true);
+    } else {
+      // A rejected sum can't be retried — issue a new one.
+      loadCaptcha();
     }
   }
 
@@ -140,6 +157,7 @@ export function FreeEtagWizard({ captcha }) {
     setVehicleReg("");
     setVehicleType(VEHICLE_TYPES[0]);
     setCaptchaAnswer("");
+    setCaptcha(null);
     setStep(0);
   }
 
@@ -340,7 +358,7 @@ export function FreeEtagWizard({ captcha }) {
           </dl>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-slate-700 dark:text-slate-300">
-              Solve: {captcha.question} = ?
+              {captcha ? `Solve: ${captcha.question} = ?` : "Loading verification…"}
             </span>
             <input
               inputMode="numeric"
@@ -369,7 +387,10 @@ export function FreeEtagWizard({ captcha }) {
         {step < 3 ? (
           <button
             type="button"
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => {
+              if (step === 2) loadCaptcha();
+              setStep((s) => s + 1);
+            }}
             disabled={(step === 1 && (!name.trim() || !phone)) || (step === 2 && !vehicleReg.trim())}
             className="flex-1 rounded-full bg-yellow-400 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-yellow-300 disabled:opacity-40"
           >
@@ -379,7 +400,7 @@ export function FreeEtagWizard({ captcha }) {
           <button
             type="button"
             onClick={sendOtp}
-            disabled={busy || !captchaAnswer}
+            disabled={busy || !captcha || !captchaAnswer}
             className="flex-1 rounded-full bg-yellow-400 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-yellow-300 disabled:opacity-40"
           >
             {busy ? "Sending…" : "Send on WhatsApp"}

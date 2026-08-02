@@ -1,0 +1,43 @@
+# Runs the app together with a PostgreSQL it can actually talk to.
+#
+#   docker compose up --build
+#
+# Reads secrets from .env (which is NOT in the image — see .dockerignore), so
+# keep DATABASE_URL there pointing at the `db` service below, e.g.
+#   DATABASE_URL="postgresql://reachout:reachout@db:5432/reachout?schema=public"
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reachout
+      POSTGRES_PASSWORD: reachout
+      POSTGRES_DB: reachout
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # The app runs `prisma migrate deploy` the moment it starts, so it must not
+    # start before Postgres is actually accepting connections.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reachout -d reachout"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Overrides whatever host .env names, so the container reaches the db
+      # service rather than a localhost that doesn't exist inside it.
+      DATABASE_URL: postgresql://reachout:reachout@db:5432/reachout?schema=public
+    ports:
+      - "3000:3000"
+
+volumes:
+  db-data:
