@@ -14,6 +14,7 @@ import {
 } from "@/components/icons";
 import { formatInr, isFree, productColor } from "@/lib/products";
 import { listProducts } from "@/lib/catalogue";
+import { ETAG_PRODUCT_SLUG } from "@/lib/etagShared";
 import { FadeIn } from "@/components/FadeIn";
 import { Logo } from "@/components/Logo";
 
@@ -368,7 +369,13 @@ export default async function Home() {
               return (
                 <FadeIn key={product.slug} delay={i * 75}>
                   <Link
-                    href={`/generate?product=${product.slug}`}
+                    // The free eTag has its own guided flow — no login, no
+                    // address, PDF on WhatsApp — so it doesn't go to /generate.
+                    href={
+                      product.slug === ETAG_PRODUCT_SLUG
+                        ? "/free-tag"
+                        : `/generate?product=${product.slug}`
+                    }
                     className="group flex h-full flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-6 text-left transition-all hover:-translate-y-1 hover:border-yellow-300 hover:bg-white hover:shadow-xl hover:shadow-black/5 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-yellow-500/40 dark:hover:bg-slate-900"
                   >
                     <span className="flex items-start justify-between gap-3">

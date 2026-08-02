@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getSeller } from "@/lib/dal";
 import { listProducts } from "@/lib/catalogue";
 import { MAX_REQUEST_QUANTITY, MAX_OPEN_REQUESTS } from "@/lib/tagRequests";
+import { recordActivity, ACTIVITY } from "@/lib/activityLog";
 
 function fail(message) {
   return { ok: false, error: message };
@@ -40,8 +41,15 @@ export async function requestTags(_prevState, formData) {
     );
   }
 
-  await prisma.tagRequest.create({
+  const request = await prisma.tagRequest.create({
     data: { sellerId: seller.id, product, quantity, note: note || null },
+  });
+
+  await recordActivity(seller, ACTIVITY.REQUEST_CREATE, {
+    summary: `Requested ${quantity} ${product} tag${quantity === 1 ? "" : "s"}`,
+    targetType: "request",
+    targetLabel: String(request.id),
+    metadata: { quantity, product },
   });
 
   revalidatePath("/seller");
@@ -67,6 +75,12 @@ export async function cancelTagRequest(_prevState, formData) {
   if (removed.count === 0) {
     return fail("That request is not yours, or admin has already decided it.");
   }
+
+  await recordActivity(seller, ACTIVITY.REQUEST_CANCEL, {
+    summary: `Withdrew tag request #${id}`,
+    targetType: "request",
+    targetLabel: String(id),
+  });
 
   revalidatePath("/seller");
   revalidatePath("/seller/requests");

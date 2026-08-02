@@ -7,6 +7,8 @@ import { ShieldIcon } from "@/components/icons";
 import { TagContactPanel } from "@/components/TagContactPanel";
 import { ScanBeacon } from "@/components/ScanBeacon";
 import { HideCodeFromAddressBar } from "@/components/HideCodeFromAddressBar";
+import { maskPlate, platePrefix, plateIsVerifiable } from "@/lib/plate";
+import { ETAG_PRODUCT_SLUG } from "@/lib/etagShared";
 
 export default async function TagPage({ params }) {
   const { code } = await params;
@@ -16,7 +18,12 @@ export default async function TagPage({ params }) {
   // must never reveal the owner's name, phone, email, address, or notes.
   const tag = await prisma.tag.findUnique({
     where: { code: code.toUpperCase() },
-    select: { code: true, vehicleReg: true, vehicleMakeModel: true, createdById: true },
+    select: {
+      code: true,
+      product: true,
+      vehicleReg: true,
+      createdById: true,
+    },
   });
 
   if (!tag) notFound();
@@ -24,6 +31,12 @@ export default async function TagPage({ params }) {
   const user = await getCurrentUser();
   const isOwner = Boolean(user && tag.createdById === user.id);
   const isUnclaimed = tag.createdById === null;
+
+  // Only the masked form ever crosses to the client. The last four digits are
+  // the proof-of-presence challenge (lib/plateGate.js) — printing the full
+  // plate here would hand the answer to anyone who merely has the URL.
+  const maskedPlate = maskPlate(tag.vehicleReg);
+  const needsPlate = plateIsVerifiable(tag.vehicleReg);
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center bg-gradient-to-b from-yellow-50 to-slate-50 px-6 py-16 dark:from-yellow-500/10 dark:to-slate-950">
@@ -42,15 +55,12 @@ export default async function TagPage({ params }) {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               If this is your tag, claim it below to start receiving calls and messages.
             </p>
-          ) : tag.vehicleReg ? (
-            <p className="tracking-widest text-slate-500 dark:text-slate-400">{tag.vehicleReg}</p>
+          ) : maskedPlate ? (
+            <p className="tracking-widest text-slate-500 dark:text-slate-400">{maskedPlate}</p>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400">
               You can reach the owner below.
             </p>
-          )}
-          {tag.vehicleMakeModel && (
-            <p className="text-sm text-slate-400">{tag.vehicleMakeModel}</p>
           )}
         </div>
 
@@ -77,7 +87,14 @@ export default async function TagPage({ params }) {
             Claim this tag
           </Link>
         ) : (
-          <TagContactPanel code={tag.code} scanToken={await createScanToken(tag.code)} />
+          <TagContactPanel
+            code={tag.code}
+            scanToken={await createScanToken(tag.code)}
+            maskedPlate={maskedPlate}
+            platePrefix={platePrefix(tag.vehicleReg)}
+            needsPlate={needsPlate}
+            isFree={tag.product === ETAG_PRODUCT_SLUG}
+          />
         )}
 
         <p className="text-xs text-slate-400">

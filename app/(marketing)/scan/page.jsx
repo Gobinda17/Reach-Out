@@ -220,16 +220,11 @@ export default function ScanPage() {
             )}
             {tagInfo ? (
               <div className="flex flex-col gap-3">
-                {(tagInfo.vehicleReg || tagInfo.vehicleMakeModel) && (
+                {tagInfo.maskedPlate && (
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-800/60">
-                    {tagInfo.vehicleReg && (
-                      <p className="font-medium tracking-widest text-slate-700 dark:text-slate-200">
-                        {tagInfo.vehicleReg}
-                      </p>
-                    )}
-                    {tagInfo.vehicleMakeModel && (
-                      <p className="text-slate-500 dark:text-slate-400">{tagInfo.vehicleMakeModel}</p>
-                    )}
+                    <p className="font-medium tracking-widest text-slate-700 dark:text-slate-200">
+                      {tagInfo.maskedPlate}
+                    </p>
                   </div>
                 )}
                 {tagInfo.claimed ? (
@@ -237,7 +232,17 @@ export default function ScanPage() {
                     <p className="text-xs text-slate-400">
                       The owner&apos;s name and phone number are never shown — not even here.
                     </p>
-                    <TagContactPanel code={tagCode} scanToken={tagInfo.scanToken} />
+                    {/* Same props as the /t/[code] page — without them the
+                        plate challenge would be hidden here while the server
+                        still enforced it, making contact impossible. */}
+                    <TagContactPanel
+                      code={tagCode}
+                      scanToken={tagInfo.scanToken}
+                      maskedPlate={tagInfo.maskedPlate}
+                      platePrefix={tagInfo.platePrefix}
+                      needsPlate={tagInfo.needsPlate}
+                      isFree={tagInfo.isFree}
+                    />
                   </>
                 ) : (
                   <>

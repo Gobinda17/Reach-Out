@@ -5,6 +5,8 @@ import { allocateVirtualNumber, CallProviderError, callProviderIsDev } from "@/l
 import { checkCallRateLimit, CallRateLimitError } from "@/lib/callRateLimit";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { verifyScanToken } from "@/lib/scanToken";
+import { checkPlateGate } from "@/lib/plateGate";
+import { isValidReason } from "@/lib/contactReasons";
 
 export async function POST(request, { params }) {
   const { code } = await params;
@@ -12,7 +14,7 @@ export async function POST(request, { params }) {
 
   const tag = await prisma.tag.findUnique({
     where: { code: upperCode },
-    select: { id: true, createdById: true, phone: true },
+    select: { id: true, createdById: true, phone: true, vehicleReg: true },
   });
   if (!tag) {
     return NextResponse.json({ error: "Tag not found" }, { status: 404 });
@@ -49,6 +51,11 @@ export async function POST(request, { params }) {
     );
   }
 
+  // Same challenge as the message endpoint — the caller has to have read the
+  // plate off the vehicle, not just opened the link.
+  const gate = checkPlateGate(upperCode, tag.vehicleReg, body?.plateLast4);
+  if (gate) return gate;
+
   try {
     checkCallRateLimit(upperCode);
   } catch (err) {
@@ -69,6 +76,7 @@ export async function POST(request, { params }) {
       data: {
         tagId: tag.id,
         initiatedById: user?.id ?? null,
+        reason: isValidReason(body?.reason) ? body.reason : null,
         provider,
         virtualNumber,
         providerCallId,

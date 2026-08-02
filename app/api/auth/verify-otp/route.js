@@ -3,6 +3,8 @@ import { verifyOtp } from "@/lib/otp";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session";
 import { normalizePhone } from "@/lib/phone";
+import { isStaffRole } from "@/lib/roles";
+import { recordActivity, ACTIVITY } from "@/lib/activityLog";
 
 export async function POST(request) {
   const body = await request.json().catch(() => null);
@@ -25,6 +27,17 @@ export async function POST(request) {
   });
 
   await createSession(user);
+
+  // Staff sign-ins only. Logging every customer login would turn an ops audit
+  // trail into surveillance of the people the product exists to protect, and
+  // would bury the entries a super admin actually needs in noise.
+  if (isStaffRole(user.role)) {
+    await recordActivity(user, ACTIVITY.AUTH_STAFF_LOGIN, {
+      summary: `${user.phone} signed in as ${user.role}`,
+      targetType: "user",
+      targetLabel: user.phone,
+    });
+  }
 
   return NextResponse.json({
     user: { id: user.id, phone: user.phone, name: user.name, role: user.role },

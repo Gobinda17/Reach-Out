@@ -28,6 +28,16 @@ const NAV = [
   },
 ];
 
+// Shown only to super admins. The page re-checks the role itself — this just
+// keeps a link out of the sidebar for admins who would only be redirected.
+const SUPERADMIN_NAV = {
+  label: "Oversight",
+  items: [
+    { href: "/admin/visitors", icon: "👣", text: "Visitors", title: "Visitors" },
+    { href: "/admin/activity", icon: "📜", text: "Activity log", title: "Activity log" },
+  ],
+};
+
 // Guards every /admin route. The proxy already redirects non-admins, but this is
 // the check that actually reads the session server-side — the proxy is only a
 // first pass and must not be the sole gate.
@@ -36,12 +46,13 @@ export default async function AdminLayout({ children }) {
   if (!isAdminRole(session.role)) redirect("/");
 
   const user = await getCurrentUser();
+  const nav = session.role === "SUPERADMIN" ? [...NAV, SUPERADMIN_NAV] : NAV;
 
   return (
     <>
       <DashboardShell
         user={user}
-        nav={NAV}
+        nav={nav}
         rootHref="/admin"
         searchHref="/admin/tags"
         searchPlaceholder="Search tags by code, name, phone…"

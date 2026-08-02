@@ -48,7 +48,38 @@ model User {
   tagRequests      TagRequest[] @relation("RequestedBy")
   requestDecisions TagRequest[] @relation("DecidedBy")
 
+  activity ActivityLog[] @relation("ActivityActor")
+
   @@map("users")
+}
+
+// An append-only audit trail of everything staff do — who, what, when. Read by
+// the super admin at /admin/activity; nothing in the app ever updates or deletes
+// a row, which is the point.
+model ActivityLog {
+  id      Int   @id @default(autoincrement())
+  actorId Int?
+  // SetNull, not Cascade: deleting an account must not erase what it did.
+  actor   User? @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  // Snapshot of who acted, so the entry stays readable after the account is
+  // deleted or its phone number changes.
+  actorPhone String
+  actorRole  Role?
+
+  // Dotted key, e.g. "user.role" or "tag.bulk_generate" — see lib/activityLog.js.
+  action      String
+  targetType  String?
+  targetLabel String?
+  summary     String
+  // Extra structured detail (changed field names, counts). Never secret values.
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@map("activity_log")
 }
 
 // A seller asking admin for a batch of blank tags to hand out. Approving one
@@ -197,6 +228,9 @@ model ScanMessage {
   tagId      Int
   tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
   message    String
+  // Which of the preset reasons the sender picked on the scan page — see
+  // lib/contactReasons.js. Null for messages sent before reasons existed.
+  reason     String?
   fromName   String?
   fromPhone  String?
   fromUserId Int?
@@ -236,6 +270,7 @@ model Call {
   tag            Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
   initiatedById  Int?
   initiatedBy    User?    @relation(fields: [initiatedById], references: [id])
+  reason         String?
   provider       String
   virtualNumber  String
   providerCallId String?

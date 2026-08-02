@@ -10,6 +10,7 @@ import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { setSetting } from "@/lib/settings";
 import { CALL_PROVIDERS } from "@/lib/calling";
 import { ROLES, ADMIN_ROLES, isAdminRole, isPrivilegedRole } from "@/lib/roles";
+import { recordActivity, changedFields, ACTIVITY } from "@/lib/activityLog";
 
 function fail(message) {
   return { ok: false, error: message };
@@ -67,6 +68,13 @@ export async function createUser(_prevState, formData) {
 
   const user = await prisma.user.create({ data: { phone, name: name || null, role } });
 
+  await recordActivity(admin, ACTIVITY.USER_CREATE, {
+    summary: `Created ${user.phone} as ${role}`,
+    targetType: "user",
+    targetLabel: user.phone,
+    metadata: { role },
+  });
+
   revalidatePath("/admin/users");
   revalidatePath("/admin");
   return done(`Added ${user.phone} as ${role}. They can log in with an OTP to that number.`);
@@ -115,6 +123,17 @@ export async function updateUser(_prevState, formData) {
     data: { phone, name: name || null, role },
   });
 
+  const changes = changedFields(existing, { phone, name: name || null, role });
+  await recordActivity(admin, ACTIVITY.USER_UPDATE, {
+    summary:
+      changes.length === 0
+        ? `Saved ${user.phone} with no changes`
+        : `Edited ${user.phone} (${changes.join(", ")})`,
+    targetType: "user",
+    targetLabel: user.phone,
+    metadata: { changed: changes, ...(changes.includes("role") ? { from: existing.role, to: role } : {}) },
+  });
+
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${id}`);
   revalidatePath("/admin");
@@ -146,6 +165,13 @@ export async function updateUserRole(_prevState, formData) {
   }
 
   const user = await prisma.user.update({ where: { id }, data: { role } });
+
+  await recordActivity(admin, ACTIVITY.USER_ROLE, {
+    summary: `Changed ${user.phone} from ${existing.role} to ${role}`,
+    targetType: "user",
+    targetLabel: user.phone,
+    metadata: { from: existing.role, to: role },
+  });
 
   revalidatePath("/admin/users");
   revalidatePath("/admin");
@@ -183,6 +209,13 @@ export async function deleteUser(_prevState, formData) {
   }
 
   const user = await prisma.user.delete({ where: { id } });
+
+  await recordActivity(admin, ACTIVITY.USER_DELETE, {
+    summary: `Deleted ${user.phone} (${user.role})`,
+    targetType: "user",
+    targetLabel: user.phone,
+    metadata: { role: user.role },
+  });
 
   revalidatePath("/admin/users");
   revalidatePath("/admin");
@@ -242,6 +275,13 @@ export async function createProduct(_prevState, formData) {
 
   const product = await prisma.product.create({ data });
 
+  await recordActivity(admin, ACTIVITY.PRODUCT_CREATE, {
+    summary: `Created product ${product.name} at ${formatInr(product.pricePaise)}`,
+    targetType: "product",
+    targetLabel: product.slug,
+    metadata: { pricePaise: product.pricePaise, active: product.active },
+  });
+
   revalidatePath("/admin/products");
   revalidatePath("/");
   revalidatePath("/generate");
@@ -263,6 +303,22 @@ export async function updateProduct(_prevState, formData) {
   if (error) return fail(error);
 
   const product = await prisma.product.update({ where: { slug }, data });
+
+  const productChanges = changedFields(existing, data);
+  await recordActivity(admin, ACTIVITY.PRODUCT_UPDATE, {
+    summary:
+      productChanges.length === 0
+        ? `Saved ${product.name} with no changes`
+        : `Edited ${product.name} (${productChanges.join(", ")})`,
+    targetType: "product",
+    targetLabel: slug,
+    metadata: {
+      changed: productChanges,
+      ...(productChanges.includes("pricePaise")
+        ? { from: existing.pricePaise, to: product.pricePaise }
+        : {}),
+    },
+  });
 
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${slug}`);
@@ -293,6 +349,12 @@ export async function deleteProduct(_prevState, formData) {
 
   await prisma.product.delete({ where: { slug } });
 
+  await recordActivity(admin, ACTIVITY.PRODUCT_DELETE, {
+    summary: `Deleted product ${product.name}`,
+    targetType: "product",
+    targetLabel: slug,
+  });
+
   revalidatePath("/admin/products");
   revalidatePath("/");
   revalidatePath("/generate");
@@ -322,6 +384,15 @@ export async function updateProductPrice(_prevState, formData) {
   const product = await prisma.product.update({
     where: { slug },
     data: { pricePaise },
+  });
+
+  await recordActivity(admin, ACTIVITY.PRODUCT_PRICE, {
+    summary: `Repriced ${product.name} from ${formatInr(existing.pricePaise)} to ${formatInr(
+      product.pricePaise
+    )}`,
+    targetType: "product",
+    targetLabel: slug,
+    metadata: { from: existing.pricePaise, to: product.pricePaise },
   });
 
   // Every surface that shows a price.
@@ -361,6 +432,15 @@ export async function updateTag(_prevState, formData) {
 
   await prisma.tag.update({ where: { code }, data: customer });
 
+  // Field names only — the audit trail must not become a second copy of the
+  // customer's contact details.
+  await recordActivity(admin, ACTIVITY.TAG_UPDATE, {
+    summary: `Edited contact details on tag ${code}`,
+    targetType: "tag",
+    targetLabel: code,
+    metadata: { changed: changedFields(existing, customer) },
+  });
+
   revalidatePath("/admin/tags");
   revalidatePath(`/admin/tags/${code}`);
   revalidatePath(`/t/${code}`);
@@ -390,6 +470,13 @@ export async function bulkGenerateTags(_prevState, formData) {
     codes.push(tag.code);
   }
 
+  await recordActivity(admin, ACTIVITY.TAG_GENERATE, {
+    summary: `Generated ${count} blank ${product} tag${count === 1 ? "" : "s"}`,
+    targetType: "product",
+    targetLabel: product,
+    metadata: { count, codes },
+  });
+
   revalidatePath("/admin/tags");
   return { ok: true, message: `Generated ${count} unclaimed tag${count === 1 ? "" : "s"}.`, codes };
 }
@@ -408,6 +495,12 @@ export async function markTagsShipped(codes) {
   const result = await prisma.tag.updateMany({
     where: { code: { in: list }, shippedAt: null },
     data: { shippedAt: new Date() },
+  });
+
+  await recordActivity(admin, ACTIVITY.TAG_SHIPPED, {
+    summary: `Marked ${result.count} tag${result.count === 1 ? "" : "s"} as shipped`,
+    targetType: "tag",
+    metadata: { count: result.count, codes: list },
   });
 
   revalidatePath("/admin/fulfillment");
@@ -431,6 +524,12 @@ export async function markTagsDownloaded(codes) {
     data: { downloadedAt: new Date() },
   });
 
+  await recordActivity(admin, ACTIVITY.TAG_DOWNLOADED, {
+    summary: `Exported cards for ${result.count} tag${result.count === 1 ? "" : "s"}`,
+    targetType: "tag",
+    metadata: { count: result.count, codes: list },
+  });
+
   revalidatePath("/admin/tags");
   return { ok: true, message: `Marked ${result.count} tag${result.count === 1 ? "" : "s"} as downloaded.` };
 }
@@ -448,17 +547,40 @@ export async function updateSettings(_prevState, formData) {
   }
   await setSetting("CALL_PROVIDER", callProvider);
 
-  const callmaskApiKey = String(formData.get("callmaskApiKey") ?? "").trim();
-  if (callmaskApiKey) await setSetting("CALLMASK_API_KEY", callmaskApiKey);
+  // Only the *names* of the secrets touched are recorded below — never a value.
+  // An audit trail that quotes the API key it was protecting is worse than none.
+  const rotated = [];
 
-  await setSetting("OTP_DEV_MODE", formData.get("otpDevMode") === "on" ? "true" : "false");
-  await setSetting("RAZORPAY_DEV_MODE", formData.get("razorpayDevMode") === "on" ? "true" : "false");
+  const callmaskApiKey = String(formData.get("callmaskApiKey") ?? "").trim();
+  if (callmaskApiKey) {
+    await setSetting("CALLMASK_API_KEY", callmaskApiKey);
+    rotated.push("CALLMASK_API_KEY");
+  }
+
+  const otpDevMode = formData.get("otpDevMode") === "on" ? "true" : "false";
+  const razorpayDevMode = formData.get("razorpayDevMode") === "on" ? "true" : "false";
+  await setSetting("OTP_DEV_MODE", otpDevMode);
+  await setSetting("RAZORPAY_DEV_MODE", razorpayDevMode);
 
   const razorpayKeyId = String(formData.get("razorpayKeyId") ?? "").trim();
-  if (razorpayKeyId) await setSetting("RAZORPAY_KEY_ID", razorpayKeyId);
+  if (razorpayKeyId) {
+    await setSetting("RAZORPAY_KEY_ID", razorpayKeyId);
+    rotated.push("RAZORPAY_KEY_ID");
+  }
 
   const razorpayKeySecret = String(formData.get("razorpayKeySecret") ?? "").trim();
-  if (razorpayKeySecret) await setSetting("RAZORPAY_KEY_SECRET", razorpayKeySecret);
+  if (razorpayKeySecret) {
+    await setSetting("RAZORPAY_KEY_SECRET", razorpayKeySecret);
+    rotated.push("RAZORPAY_KEY_SECRET");
+  }
+
+  await recordActivity(admin, ACTIVITY.SETTINGS_UPDATE, {
+    summary: `Saved settings — call provider ${callProvider}, OTP dev mode ${otpDevMode}, Razorpay dev mode ${razorpayDevMode}${
+      rotated.length ? `, rotated ${rotated.join(" and ")}` : ""
+    }`,
+    targetType: "settings",
+    metadata: { callProvider, otpDevMode, razorpayDevMode, rotated },
+  });
 
   revalidatePath("/admin/settings");
   return done("Settings saved.");
@@ -477,6 +599,13 @@ export async function deleteTag(_prevState, formData) {
   // Order.tagId is ON DELETE SET NULL, so the paid order survives as a record
   // even though the tag it issued is gone.
   await prisma.tag.delete({ where: { code } });
+
+  await recordActivity(admin, ACTIVITY.TAG_DELETE, {
+    summary: `Deleted tag ${code}`,
+    targetType: "tag",
+    targetLabel: code,
+    metadata: { product: tag.product, wasClaimed: Boolean(tag.createdById) },
+  });
 
   revalidatePath("/admin/tags");
   revalidatePath("/admin");
@@ -526,6 +655,20 @@ async function decideTagRequest(formData, decision) {
       request.quantity === 1 ? "" : "s"
     } assigned to the seller.`;
   }
+
+  await recordActivity(
+    admin,
+    decision === "APPROVED" ? ACTIVITY.REQUEST_APPROVE : ACTIVITY.REQUEST_REJECT,
+    {
+      summary:
+        decision === "APPROVED"
+          ? `Approved request #${id} — ${request.quantity} ${request.product} tags to seller`
+          : `Rejected request #${id} for ${request.quantity} ${request.product} tags`,
+      targetType: "request",
+      targetLabel: String(id),
+      metadata: { quantity: request.quantity, product: request.product, sellerId: request.sellerId },
+    }
+  );
 
   revalidatePath("/admin/requests");
   revalidatePath("/admin/tags");
