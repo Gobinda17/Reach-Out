@@ -12,7 +12,7 @@ import {
   ReachIcon,
   CarIcon,
 } from "@/components/icons";
-import { formatInr, isFree, productColor } from "@/lib/products";
+import { formatInr, isFree, productColor, DEFAULT_PRODUCT_SLUG } from "@/lib/products";
 import { listProducts } from "@/lib/catalogue";
 import { ETAG_PRODUCT_SLUG } from "@/lib/etagShared";
 import { FadeIn } from "@/components/FadeIn";
@@ -64,9 +64,8 @@ const PRODUCT_CHECKLIST = [
 // Per-slug presentation only. Names, descriptions and prices come from the
 // database so the admin can edit them.
 const PRODUCT_STYLES = {
-  "vehicle-tag": { color: "bg-black text-yellow-400", icon: "car" },
-  "business-card": { color: "bg-yellow-400 text-black" },
-  "door-tag": { color: "bg-zinc-800 text-yellow-400" },
+  "car-tag": { color: "bg-black text-yellow-400", icon: "car" },
+  "bike-tag": { color: "bg-yellow-400 text-black", icon: "car" },
   "free-etag": { color: "bg-amber-500 text-black" },
 };
 
@@ -118,6 +117,9 @@ export default async function Home() {
     color: { dark: "#000000ff", light: "#ffffff00" },
   });
   const products = await listProducts();
+  // The "Featured tag" panel names a real product rather than hard-coding one,
+  // so renaming or reordering the catalogue can't leave stale copy behind.
+  const featured = products.find((p) => p.slug === DEFAULT_PRODUCT_SLUG) ?? products[0];
 
   return (
     <div className="flex flex-col">
@@ -326,11 +328,11 @@ export default async function Home() {
               Featured tag
             </span>
             <h2 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
-              Vehicle Tag
+              {featured?.name ?? "Car Tag"}
             </h2>
             <p className="text-slate-600 dark:text-slate-400">
-              A weatherproof QR sticker for your windshield. One scan takes anyone straight to
-              your private contact card — no number ever printed on the glass.
+              A weatherproof QR sticker for your windshield or mudguard. One scan takes anyone
+              straight to your private contact card — no number ever printed on it.
             </p>
             <ul className="mt-2 grid gap-3 sm:grid-cols-2">
               {PRODUCT_CHECKLIST.map((item) => (

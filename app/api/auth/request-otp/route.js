@@ -14,7 +14,10 @@ export async function POST(request) {
     await requestOtp(phone);
   } catch (err) {
     if (err instanceof OtpRateLimitError) {
-      return NextResponse.json({ error: err.message }, { status: 429 });
+      return NextResponse.json(
+        { error: err.message, retryAfterSeconds: err.retryAfterSeconds },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds ?? 60) } }
+      );
     }
     throw err;
   }

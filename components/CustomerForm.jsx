@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { CUSTOMER_FIELDS, composeIndianAddress, parseIndianAddress } from "@/lib/customer";
-import { INDIAN_STATES } from "@/lib/indianStates";
+import { CUSTOMER_FIELDS } from "@/lib/customer";
 import { PhoneField } from "@/components/PhoneField";
+import { AddressFields } from "@/components/AddressFields";
+import { VEHICLE_TYPES } from "@/lib/etagShared";
 
 const fieldClass =
   "rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 outline-none transition-colors focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-yellow-500 dark:focus:ring-yellow-500/20 dark:disabled:bg-slate-800/60";
@@ -14,84 +14,19 @@ const fieldClass =
 const fieldShellClass =
   "rounded-xl border border-slate-200 bg-white text-slate-900 outline-none transition-colors focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus-within:border-yellow-500 dark:focus-within:ring-yellow-500/20";
 
-// Indian addresses are collected as separate fields (house/street, locality,
-// landmark, city, state, PIN) — the conventional order on Indian forms — then
-// joined into the single `address` string a Tag row stores. `initialAddress`
-// (the previous tag's saved address, if any) seeds these on first render only —
-// the fields are otherwise uncontrolled by `value.address` so typing stays smooth.
-function AddressFields({ onChange, disabled, initialAddress }) {
-  const [parts, setParts] = useState(() => parseIndianAddress(initialAddress));
-
-  function update(key, val) {
-    const next = { ...parts, [key]: val };
-    setParts(next);
-    onChange(composeIndianAddress(next));
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <input
-        className={fieldClass}
-        type="text"
-        placeholder="Flat / House no., Building, Street"
-        value={parts.line1}
-        disabled={disabled}
-        onChange={(e) => update("line1", e.target.value)}
-      />
-      <input
-        className={fieldClass}
-        type="text"
-        placeholder="Locality / Area"
-        value={parts.line2}
-        disabled={disabled}
-        onChange={(e) => update("line2", e.target.value)}
-      />
-      <input
-        className={fieldClass}
-        type="text"
-        placeholder="Landmark (optional)"
-        value={parts.landmark}
-        disabled={disabled}
-        onChange={(e) => update("landmark", e.target.value)}
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          className={fieldClass}
-          type="text"
-          placeholder="City"
-          value={parts.city}
-          disabled={disabled}
-          onChange={(e) => update("city", e.target.value)}
-        />
-        <input
-          className={fieldClass}
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
-          placeholder="PIN code"
-          value={parts.pincode}
-          disabled={disabled}
-          onChange={(e) => update("pincode", e.target.value.replace(/\D/g, ""))}
-        />
-      </div>
-      <select
-        className={fieldClass}
-        value={parts.state}
-        disabled={disabled}
-        onChange={(e) => update("state", e.target.value)}
-      >
-        <option value="">State</option>
-        {INDIAN_STATES.map((state) => (
-          <option key={state} value={state}>
-            {state}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-export function CustomerForm({ value, onChange, disabledFields }) {
+// Both flags follow the product, and both are re-checked by the API:
+// `addressRequired` is false only for a free product, which ships nothing —
+// every other tag is posted, so its delivery address is mandatory (landmark
+// aside, see validateAddress in lib/customer.js). `vehicleRequired` is true for
+// a tag that goes on a vehicle (isVehicleProduct), which needs a plate — the
+// same thing /generate asks for on its Vehicle step.
+export function CustomerForm({
+  value,
+  onChange,
+  disabledFields,
+  addressRequired = true,
+  vehicleRequired = true,
+}) {
   return (
     <div className="flex flex-col gap-4">
       {CUSTOMER_FIELDS.map((field) =>
@@ -99,22 +34,53 @@ export function CustomerForm({ value, onChange, disabledFields }) {
           <div key={field.key} className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-slate-700 dark:text-slate-300">
               {field.label}
-              {field.required && <span className="text-rose-500"> *</span>}
+              {field.required && addressRequired && <span className="text-rose-500"> *</span>}
             </span>
             <p className="-mt-1 text-xs text-slate-400">
-              We&apos;ll deliver your tag to this address.
+              {addressRequired
+                ? "We'll deliver your tag to this address. Everything except the landmark is required."
+                : "Optional — nothing is posted for this tag."}
             </p>
             <AddressFields
               disabled={disabledFields}
               initialAddress={value.address}
+              required={addressRequired}
               onChange={(address) => onChange({ ...value, address })}
             />
+          </div>
+        ) : field.key === "vehicleMakeModel" ? (
+          // A picked type, not free text — the same control and the same field
+          // both wizards write to, so a claimed tag describes its vehicle the
+          // same way a self-service one does.
+          <div key={field.key} className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-slate-700 dark:text-slate-300">{field.label}</span>
+            <div className="flex flex-wrap gap-2">
+              {VEHICLE_TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  disabled={disabledFields}
+                  aria-pressed={value.vehicleMakeModel === type}
+                  onClick={() => onChange({ ...value, vehicleMakeModel: type })}
+                  className={`rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-40 ${
+                    value.vehicleMakeModel === type
+                      ? "bg-yellow-400 text-black"
+                      : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {value.vehicleMakeModel === type ? "✓ " : ""}
+                  {type}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <label key={field.key} className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-slate-700 dark:text-slate-300">
               {field.label}
-              {field.required && <span className="text-rose-500"> *</span>}
+              {(field.required || (field.key === "vehicleReg" && vehicleRequired)) && (
+                <span className="text-rose-500"> *</span>
+              )}
             </span>
             {field.key === "notes" ? (
               <textarea
@@ -135,11 +101,23 @@ export function CustomerForm({ value, onChange, disabledFields }) {
                 selectClassName="rounded-l-xl disabled:bg-slate-50 dark:disabled:bg-slate-800/60"
                 inputClassName="rounded-r-xl disabled:bg-slate-50 disabled:text-slate-500 dark:disabled:bg-slate-800/60"
               />
+            ) : field.key === "vehicleReg" ? (
+              // Upper-cased as you type, like the wizard's plate field — a
+              // plate is never lower case, and it keeps stored values uniform.
+              <input
+                className={`${fieldClass} font-mono tracking-wide`}
+                type="text"
+                maxLength={20}
+                placeholder="e.g. DL01AB1234"
+                value={value.vehicleReg}
+                disabled={disabledFields}
+                onChange={(e) => onChange({ ...value, vehicleReg: e.target.value.toUpperCase() })}
+              />
             ) : (
               <input
                 className={fieldClass}
                 type={field.key === "email" ? "email" : "text"}
-                maxLength={field.key === "name" ? 100 : field.key === "vehicleReg" ? 20 : 100}
+                maxLength={100}
                 value={value[field.key]}
                 disabled={disabledFields}
                 onChange={(e) => onChange({ ...value, [field.key]: e.target.value })}

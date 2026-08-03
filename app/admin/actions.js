@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getAdmin } from "@/lib/dal";
 import { sanitizeCustomer, createBlankTag } from "@/lib/tags";
-import { parseInrToPaise, formatInr } from "@/lib/products";
-import { productUsage, listProducts } from "@/lib/catalogue";
+import { parseInrToPaise, formatInr, isFree } from "@/lib/products";
+import { productUsage, listProducts, getProduct } from "@/lib/catalogue";
+import { isBlankAddress } from "@/lib/customer";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { setSetting } from "@/lib/settings";
 import { CALL_PROVIDERS } from "@/lib/calling";
@@ -428,6 +429,14 @@ export async function updateTag(_prevState, formData) {
   }
   if (!normalizePhone(customer.phone)) {
     return fail(PHONE_ERROR);
+  }
+  // Anything that isn't a free (PDF) tag gets posted, so its address may not be
+  // emptied. Deliberately only a presence check, not the structured one the
+  // customer-facing forms run: this field is a free-text textarea precisely so
+  // an admin can correct an address into whatever shape the post office needs.
+  const product = await getProduct(existing.product);
+  if ((!product || !isFree(product)) && isBlankAddress(customer.address)) {
+    return fail("A tag that gets posted needs a delivery address.");
   }
 
   await prisma.tag.update({ where: { code }, data: customer });

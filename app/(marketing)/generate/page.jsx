@@ -1,10 +1,12 @@
 import { verifySession, getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
-import { GenerateForm } from "@/components/GenerateForm";
-import { QrIcon } from "@/components/icons";
+import { PaidTagWizard } from "@/components/PaidTagWizard";
 import { DEFAULT_PRODUCT_SLUG } from "@/lib/products";
 import { listProducts } from "@/lib/catalogue";
 import { paymentDevModeEnabled } from "@/lib/razorpay";
+import { ETAG_PRODUCT_SLUG } from "@/lib/etagShared";
+import { redirect } from "next/navigation";
+import { isFree } from "@/lib/products";
 
 export default async function GeneratePage({ searchParams }) {
   const session = await verifySession();
@@ -34,6 +36,12 @@ export default async function GeneratePage({ searchParams }) {
     products.find((p) => p.slug === DEFAULT_PRODUCT_SLUG) ??
     products[0];
 
+  // The free eTag has its own public flow — no login, no address, PDF instead of
+  // a posted tag. Anyone landing here with it selected belongs there.
+  if (selected && (selected.slug === ETAG_PRODUCT_SLUG || isFree(selected))) {
+    redirect("/free-tag");
+  }
+
   // Every product can be retired from the admin, so this page has to cope with
   // an empty catalogue rather than rendering an undefined product.
   if (!selected) {
@@ -50,43 +58,19 @@ export default async function GeneratePage({ searchParams }) {
   }
 
   return (
-    <div className="relative overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-yellow-100 to-amber-50 opacity-70 blur-3xl dark:from-yellow-500/10 dark:to-transparent"
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-10">
+      <PaidTagWizard
+        initialCustomer={{
+          name: lastTag?.name ?? user?.name ?? "",
+          phone: lastTag?.phone ?? session.phone ?? "",
+          email: lastTag?.email ?? "",
+          vehicleReg: lastTag?.vehicleReg ?? "",
+          address: lastTag?.address ?? "",
+        }}
+        product={selected}
+        products={products.filter((p) => !isFree(p))}
+        devBypass={await paymentDevModeEnabled()}
       />
-      <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
-        <div className="flex flex-col gap-2">
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-yellow-300 bg-yellow-50 px-3 py-1 text-xs font-medium text-amber-800 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-300">
-            <QrIcon className="h-3.5 w-3.5" />
-            {selected.name}
-          </span>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            Get your {selected.name}
-          </h1>
-          <p className="max-w-lg text-sm text-slate-500 dark:text-slate-400">
-            Fill in the details below. {selected.description} Once the tag is issued you get a short
-            code and a QR pointing at it — scanning that QR (with this app or any QR reader) looks
-            the details back up.
-          </p>
-        </div>
-
-        <GenerateForm
-          initialCustomer={{
-            name: lastTag?.name ?? user?.name ?? "",
-            phone: lastTag?.phone ?? session.phone ?? "",
-            email: lastTag?.email ?? "",
-            vehicleReg: lastTag?.vehicleReg ?? "",
-            vehicleMakeModel: lastTag?.vehicleMakeModel ?? "",
-            address: lastTag?.address ?? "",
-            notes: lastTag?.notes ?? "",
-          }}
-          product={selected}
-          products={products}
-          devBypass={await paymentDevModeEnabled()}
-          existingTagCode={lastTag?.code ?? null}
-        />
-      </div>
     </div>
   );
 }

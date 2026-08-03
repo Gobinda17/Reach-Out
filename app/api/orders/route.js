@@ -2,12 +2,13 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
-import { isFree } from "@/lib/products";
+import { isFree, isVehicleProduct } from "@/lib/products";
 import { getPurchasableProduct } from "@/lib/catalogue";
 import { createRazorpayOrder, razorpayKeyId, paymentDevModeEnabled, RazorpayError } from "@/lib/razorpay";
 import { sanitizeCustomer } from "@/lib/tags";
 import { issuePaidTag } from "@/lib/orders";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
+import { validateAddress } from "@/lib/customer";
 
 export async function POST(request) {
   const user = await getCurrentUser();
@@ -29,11 +30,26 @@ export async function POST(request) {
   }
 
   const customer = sanitizeCustomer(body?.customer);
-  if (!customer.name || !customer.phone || !customer.address) {
-    return NextResponse.json({ error: "name, phone, and address are required" }, { status: 400 });
+  if (!customer.name || !customer.phone) {
+    return NextResponse.json({ error: "name and phone are required" }, { status: 400 });
   }
   if (!normalizePhone(customer.phone)) {
     return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
+  }
+  // The wizard's Vehicle step already asks for this, but a client-side check is
+  // always bypassable — and a vehicle tag with no plate on it is useless.
+  if (isVehicleProduct(product.slug) && !customer.vehicleReg) {
+    return NextResponse.json(
+      { error: "Your vehicle registration number is required." },
+      { status: 400 }
+    );
+  }
+  // Paid products are always posted, so a complete delivery address is
+  // mandatory here — checked before any money is taken, since the order's
+  // customerData is what issuePaidTag later mints the tag from.
+  const addressError = validateAddress(customer.address);
+  if (addressError) {
+    return NextResponse.json({ error: addressError }, { status: 400 });
   }
 
   if (await paymentDevModeEnabled()) {

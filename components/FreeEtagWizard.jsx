@@ -5,62 +5,13 @@ import Link from "next/link";
 import { PhoneField } from "@/components/PhoneField";
 import { VEHICLE_TYPES } from "@/lib/etagShared";
 import { downloadTagCard } from "@/lib/tagCard";
+import { Stepper } from "@/components/wizard/Stepper";
 
 const STEPS = ["Start", "You", "Vehicle", "Verify"];
 
 const fieldShell =
   "rounded-xl border border-slate-300 bg-white text-slate-900 outline-none transition-colors focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus-within:border-yellow-500 dark:focus-within:ring-yellow-500/20";
 const field = `${fieldShell} w-full px-4 py-3 text-base`;
-
-function Stepper({ step }) {
-  return (
-    <ol className="flex items-start justify-between gap-1">
-      {STEPS.map((label, i) => {
-        const state = i < step ? "done" : i === step ? "current" : "todo";
-        return (
-          <li key={label} className="flex flex-1 flex-col items-center gap-1.5">
-            <div className="flex w-full items-center gap-1">
-              {i > 0 && (
-                <span
-                  aria-hidden
-                  className={`h-0.5 flex-1 ${
-                    i <= step ? "bg-yellow-400" : "bg-slate-200 dark:bg-slate-700"
-                  }`}
-                />
-              )}
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-                  state === "todo"
-                    ? "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
-                    : "bg-yellow-400 text-black"
-                } ${state === "current" ? "ring-2 ring-black ring-offset-2 dark:ring-white" : ""}`}
-              >
-                {i + 1}
-              </span>
-              {i < STEPS.length - 1 && (
-                <span
-                  aria-hidden
-                  className={`h-0.5 flex-1 ${
-                    i < step ? "bg-yellow-400" : "bg-slate-200 dark:bg-slate-700"
-                  }`}
-                />
-              )}
-            </div>
-            <span
-              className={`text-xs ${
-                state === "current"
-                  ? "font-semibold text-slate-900 dark:text-white"
-                  : "text-slate-500 dark:text-slate-400"
-              }`}
-            >
-              {label}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
 function Benefit({ icon, title, body }) {
   return (
@@ -211,7 +162,7 @@ export function FreeEtagWizard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Stepper step={step} />
+      <Stepper steps={STEPS} current={step} />
 
       {step === 0 && (
         <div className="flex flex-col gap-4">

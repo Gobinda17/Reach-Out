@@ -2,20 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { emptyCustomer } from "@/lib/customer";
+import { emptyCustomer, validateAddress } from "@/lib/customer";
 import { CustomerForm } from "@/components/CustomerForm";
 
 // Lets whoever scans an unclaimed tag fill in their details and take
-// ownership of it — the tag then behaves exactly like a self-generated one.
-export function ClaimTagForm({ code, initialCustomer }) {
+// ownership of it — the tag then behaves exactly like a self-generated one,
+// and asks for the same mandatory fields /generate does. Both flags come from
+// the tag's product: a free (PDF) tag posts nothing so needs no address, and
+// only a vehicle tag needs a plate.
+export function ClaimTagForm({
+  code,
+  initialCustomer,
+  addressRequired = true,
+  vehicleRequired = true,
+}) {
   const router = useRouter();
   const [customer, setCustomer] = useState({ ...emptyCustomer, ...initialCustomer });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [claimed, setClaimed] = useState(false);
 
+  const addressError = validateAddress(customer.address, { required: addressRequired });
+  const missingVehicleReg = vehicleRequired && customer.vehicleReg.trim() === "";
   const canSubmit =
-    customer.name.trim() !== "" && customer.phone.trim() !== "" && customer.address.trim() !== "";
+    customer.name.trim() !== "" &&
+    customer.phone.trim() !== "" &&
+    !missingVehicleReg &&
+    !addressError;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -60,7 +73,13 @@ export function ClaimTagForm({ code, initialCustomer }) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-black/5 dark:border-slate-800 dark:bg-slate-900"
     >
-      <CustomerForm value={customer} onChange={setCustomer} disabledFields={submitting} />
+      <CustomerForm
+        value={customer}
+        onChange={setCustomer}
+        disabledFields={submitting}
+        addressRequired={addressRequired}
+        vehicleRequired={vehicleRequired}
+      />
 
       <button
         type="submit"
@@ -71,7 +90,11 @@ export function ClaimTagForm({ code, initialCustomer }) {
       </button>
 
       {!canSubmit && (
-        <p className="text-xs text-slate-400">Name, phone number, and address are required.</p>
+        <p className="text-xs text-slate-400">
+          {missingVehicleReg
+            ? "Your vehicle registration number is required."
+            : (addressError ?? "Name and phone number are required.")}
+        </p>
       )}
       {error && <p className="text-sm text-rose-500">{error}</p>}
     </form>

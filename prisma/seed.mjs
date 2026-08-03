@@ -1,5 +1,8 @@
-// Seeds the two staff accounts. Safe to re-run: it upserts by phone, so an
-// existing account is promoted to the right role rather than duplicated.
+// Seeds the staff accounts and the product catalogue. Safe to re-run: staff are
+// upserted by phone and products by slug, so nothing is duplicated.
+//
+// Products were previously created by hand in the admin, which meant a fresh
+// database came up with an empty storefront and /generate had nothing to sell.
 //
 //   npm run db:seed
 //
@@ -10,6 +13,35 @@ import { PrismaClient } from "@prisma/client";
 import { normalizePhone } from "../lib/phone.js";
 
 const prisma = new PrismaClient();
+
+// The whole catalogue: two paid tags and the free eTag. Prices are in paise.
+// `update` deliberately leaves pricePaise and active alone — an admin who
+// changes a price at /admin/products must not have it reset by a re-seed.
+const PRODUCTS = [
+  {
+    slug: "car-tag",
+    name: "Car Tag",
+    description:
+      "A tag for your car. Anyone who scans it can reach you without seeing your number.",
+    pricePaise: 19900,
+    sortOrder: 1,
+  },
+  {
+    slug: "bike-tag",
+    name: "Bike Tag",
+    description:
+      "A tag for your bike or scooter. Same private call and message, smaller sticker.",
+    pricePaise: 19900,
+    sortOrder: 2,
+  },
+  {
+    slug: "free-etag",
+    name: "Free eTag",
+    description: "A free digital tag, delivered as a PDF. Print it yourself — nothing is posted.",
+    pricePaise: 0,
+    sortOrder: 3,
+  },
+];
 
 const STAFF = [
   {
@@ -23,6 +55,15 @@ const STAFF = [
 ];
 
 async function main() {
+  for (const product of PRODUCTS) {
+    const row = await prisma.product.upsert({
+      where: { slug: product.slug },
+      update: { name: product.name, description: product.description, sortOrder: product.sortOrder },
+      create: { ...product, active: true },
+    });
+    console.log(`  product     ${row.slug.padEnd(10)}  ${row.pricePaise / 100} INR  (${row.name})`);
+  }
+
   for (const staff of STAFF) {
     const raw = process.env[staff.envKey] || staff.fallback;
     const phone = normalizePhone(raw);

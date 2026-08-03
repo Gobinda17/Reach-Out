@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
-import { formatAmount } from "@/lib/products";
-import { productNameMap } from "@/lib/catalogue";
+import { formatAmount, isFree } from "@/lib/products";
+import { productNameMap, getProduct } from "@/lib/catalogue";
 import { TagEditForm } from "@/components/admin/TagEditForm";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { DownloadTagCardButton } from "@/components/admin/DownloadTagCardButton";
@@ -25,6 +25,10 @@ export default async function AdminTagDetailPage({ params }) {
   if (!tag) notFound();
 
   const names = await productNameMap();
+  // Only a free tag (a PDF) posts nothing — every other product is delivered,
+  // so its address may not be cleared. updateTag() re-checks this.
+  const product = await getProduct(tag.product);
+  const addressRequired = !product || !isFree(product);
   // No owner row means this is bulk-generated blank stock, not a tag anyone
   // has taken ownership of yet — the same test the tags list uses.
   const claimed = Boolean(tag.createdById);
@@ -124,7 +128,7 @@ export default async function AdminTagDetailPage({ params }) {
           </div>
         </header>
         {claimed ? (
-          <TagEditForm tag={tag} />
+          <TagEditForm tag={tag} addressRequired={addressRequired} />
         ) : (
           // Blank stock has no owner yet, so there are no contact details to
           // edit — the first person to scan it claims it from /t/[code]/claim

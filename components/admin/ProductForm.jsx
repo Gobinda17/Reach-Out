@@ -31,7 +31,7 @@ export function ProductForm({ product }) {
           <input
             name="slug"
             defaultValue={product?.slug ?? ""}
-            placeholder="vehicle-tag"
+            placeholder="car-tag"
             disabled={editing}
           />
         </label>

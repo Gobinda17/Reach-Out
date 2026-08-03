@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db";
 import { verifySession, getCurrentUser } from "@/lib/dal";
 import { ShieldIcon } from "@/components/icons";
 import { ClaimTagForm } from "@/components/ClaimTagForm";
+import { getProduct } from "@/lib/catalogue";
+import { isFree, isVehicleProduct } from "@/lib/products";
+import { defaultVehicleType } from "@/lib/etagShared";
 
 export default async function ClaimTagPage({ params }) {
   const { code } = await params;
@@ -17,9 +20,17 @@ export default async function ClaimTagPage({ params }) {
 
   const tag = await prisma.tag.findUnique({
     where: { code: upperCode },
-    select: { code: true, createdById: true },
+    select: { code: true, createdById: true, product: true },
   });
   if (!tag) notFound();
+
+  // A free tag is a PDF — nothing is posted, so it's the only kind that can be
+  // claimed without a delivery address. The claim API re-checks this.
+  const product = await getProduct(tag.product);
+  const addressRequired = !product || !isFree(product);
+  // A tag that goes on a vehicle needs its plate, exactly as /generate's
+  // Vehicle step does. The claim API re-checks both.
+  const vehicleRequired = isVehicleProduct(tag.product);
 
   const isOwner = tag.createdById === session.userId;
 
@@ -86,7 +97,15 @@ export default async function ClaimTagPage({ params }) {
         <div className="w-full max-w-md">
           <ClaimTagForm
             code={tag.code}
-            initialCustomer={{ name: user?.name ?? "", phone: session.phone ?? "" }}
+            initialCustomer={{
+              name: user?.name ?? "",
+              phone: session.phone ?? "",
+              // The tag is already printed for a particular vehicle, so the
+              // chooser starts on the one its product implies.
+              vehicleMakeModel: defaultVehicleType(tag.product),
+            }}
+            addressRequired={addressRequired}
+            vehicleRequired={vehicleRequired}
           />
         </div>
       )}

@@ -124,7 +124,7 @@ export function ChevronDownIcon({ className }) {
   );
 }
 
-// Simple generic car-side-view glyph, used for the vehicle-tag motif.
+// Simple generic car-side-view glyph, used for the vehicle tag motif.
 export function CarIcon({ className }) {
   return (
     <svg viewBox="0 0 48 24" className={className} fill="none">
