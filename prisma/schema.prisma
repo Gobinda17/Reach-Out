@@ -263,7 +263,10 @@ model Scan {
 // other's real number. `provider` is a config switch (see lib/calling.js) —
 // "dev" allocates a placeholder number and connects nothing for local
 // development; a real provider (Exotel, Twilio, ...) replaces it later
-// without changing this table's shape.
+// without changing this table's shape. `callerPhone` is kept so a provider's
+// routing webhook (see app/api/webhooks/edesy/route.js) can be told which
+// real number to bridge a masked call to — the owner's number is looked up
+// via `tag`, so this is the other half of that pair.
 model Call {
   id             Int      @id @default(autoincrement())
   tagId          Int
@@ -273,6 +276,7 @@ model Call {
   reason         String?
   provider       String
   virtualNumber  String
+  callerPhone    String?
   providerCallId String?
   status         String   @default("allocated")
   expiresAt      DateTime

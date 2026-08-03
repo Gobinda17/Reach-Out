@@ -37,7 +37,23 @@ export function SettingsForm({ callProviders, callProvider, saved }) {
               autoComplete="off"
             />
           </label>
+          <label className="field">
+            <span>
+              Webhook signing secret{" "}
+              {saved.CALLMASK_WEBHOOK_SECRET && "(saved — leave blank to keep it)"}
+            </span>
+            <input
+              name="callmaskWebhookSecret"
+              type="password"
+              placeholder={saved.CALLMASK_WEBHOOK_SECRET ? "•••••••••••••••• (unchanged)" : "optional"}
+              autoComplete="off"
+            />
+          </label>
         </div>
+        <p className="kpi-sub" style={{ marginTop: "0.5rem" }}>
+          Configure <code>/api/webhooks/edesy</code> as the masking-route webhook URL in edesy&apos;s
+          dashboard, and paste the same signing secret here if you set one there.
+        </p>
       </fieldset>
 
       <fieldset style={{ border: "none", padding: 0, margin: 0 }}>

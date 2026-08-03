@@ -5,6 +5,7 @@ import { SettingsForm } from "@/components/admin/SettingsForm";
 const KEYS = [
   "CALL_PROVIDER",
   "CALLMASK_API_KEY",
+  "CALLMASK_WEBHOOK_SECRET",
   "OTP_DEV_MODE",
   "RAZORPAY_DEV_MODE",
   "RAZORPAY_KEY_ID",
@@ -20,6 +21,9 @@ export default async function AdminSettingsPage() {
   // "configured" and stay blank rather than prompt for re-entry.
   const saved = {
     CALLMASK_API_KEY: Boolean(values.CALLMASK_API_KEY || process.env.CALLMASK_API_KEY),
+    CALLMASK_WEBHOOK_SECRET: Boolean(
+      values.CALLMASK_WEBHOOK_SECRET || process.env.CALLMASK_WEBHOOK_SECRET
+    ),
     RAZORPAY_KEY_ID: Boolean(values.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID),
     RAZORPAY_KEY_SECRET: Boolean(values.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET),
     RAZORPAY_WEBHOOK_SECRET: Boolean(

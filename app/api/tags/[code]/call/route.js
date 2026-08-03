@@ -79,6 +79,7 @@ export async function POST(request, { params }) {
         reason: isValidReason(body?.reason) ? body.reason : null,
         provider,
         virtualNumber,
+        callerPhone,
         providerCallId,
         expiresAt,
       },

@@ -557,6 +557,12 @@ export async function updateSettings(_prevState, formData) {
     rotated.push("CALLMASK_API_KEY");
   }
 
+  const callmaskWebhookSecret = String(formData.get("callmaskWebhookSecret") ?? "").trim();
+  if (callmaskWebhookSecret) {
+    await setSetting("CALLMASK_WEBHOOK_SECRET", callmaskWebhookSecret);
+    rotated.push("CALLMASK_WEBHOOK_SECRET");
+  }
+
   const otpDevMode = formData.get("otpDevMode") === "on" ? "true" : "false";
   const razorpayDevMode = formData.get("razorpayDevMode") === "on" ? "true" : "false";
   await setSetting("OTP_DEV_MODE", otpDevMode);
