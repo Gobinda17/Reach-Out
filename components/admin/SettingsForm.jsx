@@ -6,7 +6,7 @@ import { updateSettings } from "@/app/admin/actions";
 // `saved` flags which secret fields already have a value in the DB or env —
 // their inputs stay blank (never echo a real secret back to the browser) and
 // show a "saved, leave blank to keep it" placeholder instead.
-export function SettingsForm({ callProviders, callProvider, saved }) {
+export function SettingsForm({ callProviders, callProvider, callmaskNumbers, saved }) {
   const [state, formAction, pending] = useActionState(updateSettings, null);
 
   return (
@@ -49,10 +49,23 @@ export function SettingsForm({ callProviders, callProvider, saved }) {
               autoComplete="off"
             />
           </label>
+          <label className="field">
+            <span>Masking numbers (DIDs)</span>
+            <input
+              name="callmaskNumbers"
+              type="text"
+              defaultValue={callmaskNumbers}
+              placeholder="+917938310816, +91..."
+              autoComplete="off"
+            />
+          </label>
         </div>
         <p className="kpi-sub" style={{ marginTop: "0.5rem" }}>
           Configure <code>/api/webhooks/edesy</code> as the masking-route webhook URL in edesy&apos;s
-          dashboard, and paste the same signing secret here if you set one there.
+          dashboard for each number below, and paste the same signing secret here if you set one
+          there. &quot;Masking numbers&quot; is the comma-separated list of DIDs you&apos;ve bought
+          and configured that way — calls are handed out from whichever of these isn&apos;t
+          currently in use.
         </p>
       </fieldset>
 

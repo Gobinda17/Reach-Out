@@ -6,6 +6,7 @@ const KEYS = [
   "CALL_PROVIDER",
   "CALLMASK_API_KEY",
   "CALLMASK_WEBHOOK_SECRET",
+  "CALLMASK_NUMBERS",
   "OTP_DEV_MODE",
   "RAZORPAY_DEV_MODE",
   "RAZORPAY_KEY_ID",
@@ -33,6 +34,7 @@ export default async function AdminSettingsPage() {
     razorpayDevModeOn: (values.RAZORPAY_DEV_MODE ?? process.env.RAZORPAY_DEV_MODE) === "true",
   };
   const callProvider = values.CALL_PROVIDER || process.env.CALL_PROVIDER || "dev";
+  const callmaskNumbers = values.CALLMASK_NUMBERS || process.env.CALLMASK_NUMBERS || "";
 
   return (
     <article className="card">
@@ -47,7 +49,12 @@ export default async function AdminSettingsPage() {
         </div>
       </header>
 
-      <SettingsForm callProviders={CALL_PROVIDERS} callProvider={callProvider} saved={saved} />
+      <SettingsForm
+        callProviders={CALL_PROVIDERS}
+        callProvider={callProvider}
+        callmaskNumbers={callmaskNumbers}
+        saved={saved}
+      />
     </article>
   );
 }

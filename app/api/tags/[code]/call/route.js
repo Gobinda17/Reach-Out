@@ -31,10 +31,11 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "This tag has no phone number on file." }, { status: 400 });
   }
 
-  // Every real masking provider needs the caller's number too, to bind the
-  // masked session to them — there's no way to hand an anonymous stranger a
-  // dial-able number otherwise. The dev bypass doesn't use it, but we still
-  // require it here so the flow behaves the same in dev and production.
+  // Stored on the Call row below and used by app/api/webhooks/edesy/route.js
+  // to decide who to bridge a masked call to at ring-time — the provider
+  // itself is never told this number up front (see lib/calling.js). The dev
+  // bypass doesn't use it, but we still require it here so the flow behaves
+  // the same in dev and production.
   const body = await request.json().catch(() => null);
   const callerPhone = normalizePhone(body?.callerPhone);
   if (!callerPhone) {
@@ -66,11 +67,7 @@ export async function POST(request, { params }) {
   }
 
   try {
-    const { provider, virtualNumber, providerCallId, expiresAt } = await allocateVirtualNumber({
-      ownerPhone: tag.phone,
-      callerPhone,
-      reference: upperCode,
-    });
+    const { provider, virtualNumber, providerCallId, expiresAt } = await allocateVirtualNumber();
 
     const call = await prisma.call.create({
       data: {

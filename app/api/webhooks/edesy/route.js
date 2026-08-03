@@ -41,7 +41,7 @@ export async function POST(request) {
   const call = await prisma.call.findFirst({
     where: { virtualNumber: { endsWith: maskedLast10 }, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: "desc" },
-    select: { callerPhone: true, tag: { select: { phone: true } } },
+    select: { id: true, callerPhone: true, tag: { select: { phone: true } } },
   });
 
   if (!call || !call.callerPhone || !call.tag?.phone) {
@@ -60,6 +60,13 @@ export async function POST(request) {
 
   if (!targetNumber) {
     return NextResponse.json({ action: "reject", reject_reason: "caller_mismatch" });
+  }
+
+  // Recorded so the lifecycle-events webhook (events/route.js) can match
+  // call.connected/call.ended/etc. to this row by call_sid instead of
+  // falling back to a masked-number lookup.
+  if (body?.call_sid) {
+    await prisma.call.update({ where: { id: call.id }, data: { providerCallId: body.call_sid } });
   }
 
   return NextResponse.json({ action: "connect", target_number: targetNumber });

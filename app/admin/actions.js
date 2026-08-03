@@ -572,6 +572,19 @@ export async function updateSettings(_prevState, formData) {
     rotated.push("CALLMASK_WEBHOOK_SECRET");
   }
 
+  // Not a secret, so (unlike the fields above) this always overwrites —
+  // submitting it blank means "no masking numbers", not "leave unchanged".
+  const callmaskNumbersRaw = String(formData.get("callmaskNumbers") ?? "");
+  const callmaskNumbers = callmaskNumbersRaw
+    .split(",")
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .map((n) => normalizePhone(n));
+  if (callmaskNumbers.some((n) => !n)) {
+    return fail(`One of the masking numbers isn't valid. ${PHONE_ERROR}`);
+  }
+  await setSetting("CALLMASK_NUMBERS", callmaskNumbers.join(","));
+
   const otpDevMode = formData.get("otpDevMode") === "on" ? "true" : "false";
   const razorpayDevMode = formData.get("razorpayDevMode") === "on" ? "true" : "false";
   await setSetting("OTP_DEV_MODE", otpDevMode);
