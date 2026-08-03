@@ -76,7 +76,24 @@ export function SettingsForm({ callProviders, callProvider, saved }) {
               autoComplete="off"
             />
           </label>
+          <label className="field">
+            <span>
+              Webhook secret {saved.RAZORPAY_WEBHOOK_SECRET && "(saved — leave blank to keep it)"}
+            </span>
+            <input
+              name="razorpayWebhookSecret"
+              type="password"
+              placeholder={saved.RAZORPAY_WEBHOOK_SECRET ? "•••••••••••••••• (unchanged)" : ""}
+              autoComplete="off"
+            />
+          </label>
         </div>
+        <p className="kpi-sub" style={{ marginTop: "0.5rem" }}>
+          Configure <code>/api/orders/webhook</code> as the endpoint URL in the Razorpay
+          Dashboard&apos;s Webhooks section (for the <code>payment.captured</code> and{" "}
+          <code>order.paid</code> events), and paste the secret it gives you here — it&apos;s
+          separate from the API key/secret above.
+        </p>
       </fieldset>
 
       <div className="form-actions">

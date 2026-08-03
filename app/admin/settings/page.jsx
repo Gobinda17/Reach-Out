@@ -9,6 +9,7 @@ const KEYS = [
   "RAZORPAY_DEV_MODE",
   "RAZORPAY_KEY_ID",
   "RAZORPAY_KEY_SECRET",
+  "RAZORPAY_WEBHOOK_SECRET",
 ];
 
 export default async function AdminSettingsPage() {
@@ -21,6 +22,9 @@ export default async function AdminSettingsPage() {
     CALLMASK_API_KEY: Boolean(values.CALLMASK_API_KEY || process.env.CALLMASK_API_KEY),
     RAZORPAY_KEY_ID: Boolean(values.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID),
     RAZORPAY_KEY_SECRET: Boolean(values.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET),
+    RAZORPAY_WEBHOOK_SECRET: Boolean(
+      values.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET
+    ),
     otpDevModeOn: (values.OTP_DEV_MODE ?? process.env.OTP_DEV_MODE) === "true",
     razorpayDevModeOn: (values.RAZORPAY_DEV_MODE ?? process.env.RAZORPAY_DEV_MODE) === "true",
   };

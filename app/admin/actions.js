@@ -574,6 +574,12 @@ export async function updateSettings(_prevState, formData) {
     rotated.push("RAZORPAY_KEY_SECRET");
   }
 
+  const razorpayWebhookSecret = String(formData.get("razorpayWebhookSecret") ?? "").trim();
+  if (razorpayWebhookSecret) {
+    await setSetting("RAZORPAY_WEBHOOK_SECRET", razorpayWebhookSecret);
+    rotated.push("RAZORPAY_WEBHOOK_SECRET");
+  }
+
   await recordActivity(admin, ACTIVITY.SETTINGS_UPDATE, {
     summary: `Saved settings — call provider ${callProvider}, OTP dev mode ${otpDevMode}, Razorpay dev mode ${razorpayDevMode}${
       rotated.length ? `, rotated ${rotated.join(" and ")}` : ""
