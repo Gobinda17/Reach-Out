@@ -67,6 +67,14 @@ export function SettingsForm({ callProviders, callProvider, callmaskNumbers, sav
           and configured that way — calls are handed out from whichever of these isn&apos;t
           currently in use.
         </p>
+        <p className="kpi-sub" style={{ marginTop: "0.5rem" }}>
+          Separately, configure <code>/api/webhooks/edesy/events</code> as edesy&apos;s account-wide
+          <em> event webhook</em> (same signing secret) — without it, a number stays reserved for
+          the full 15-minute window after every attempt instead of freeing up as soon as a call
+          actually ends or goes unanswered. With only one number in the list above, this matters:
+          it&apos;s the difference between one busy caller blocking everyone else for 15 minutes or
+          for a few seconds.
+        </p>
       </fieldset>
 
       <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
