@@ -5,7 +5,7 @@ export default function MarketingLayout({ children }) {
   return (
     <>
       <SiteHeader />
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className="flex flex-1 flex-col pt-16">{children}</main>
       <SiteFooter />
     </>
   );

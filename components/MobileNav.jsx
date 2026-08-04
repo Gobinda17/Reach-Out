@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MenuIcon, CloseIcon } from "./icons";
@@ -18,9 +19,21 @@ export function MobileNav({ user }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    if (!open) return;
+    const scrollY = window.scrollY;
+    const { body } = document;
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.overflow = "";
+      window.scrollTo(0, scrollY);
     };
   }, [open]);
 
@@ -43,77 +56,79 @@ export function MobileNav({ user }) {
         {open ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
       </button>
 
-      {open && (
-        <div className="fixed inset-x-0 top-16 z-40 h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200/70 bg-white/95 backdrop-blur-md dark:border-slate-800/70 dark:bg-slate-950/95">
-          <div className="flex flex-col gap-1 px-6 py-4">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
-              >
-                {link.label}
-              </Link>
-            ))}
+      {open &&
+        createPortal(
+          <div className="fixed inset-x-0 top-16 bottom-0 z-30 overflow-y-auto border-t border-slate-200/70 bg-white/95 backdrop-blur-md dark:border-slate-800/70 dark:bg-slate-950/95">
+            <div className="flex flex-col gap-1 px-6 py-4">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
+                >
+                  {link.label}
+                </Link>
+              ))}
 
-            {user ? (
-              <>
-                <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
-                <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-semibold text-yellow-400">
-                    {(user.name?.trim()?.[0] ?? user.phone.slice(-1)).toUpperCase()}
-                  </span>
-                  <span className="truncate">{user.name || user.phone}</span>
-                </div>
-                {isAdminRole(user.role) && (
+              {user ? (
+                <>
+                  <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
+                  <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-semibold text-yellow-400">
+                      {(user.name?.trim()?.[0] ?? user.phone.slice(-1)).toUpperCase()}
+                    </span>
+                    <span className="truncate">{user.name || user.phone}</span>
+                  </div>
+                  {isAdminRole(user.role) && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setOpen(false)}
+                      className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
+                    >
+                      Admin panel
+                    </Link>
+                  )}
+                  {user.role === "SALES" && (
+                    <Link
+                      href="/seller"
+                      onClick={() => setOpen(false)}
+                      className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
+                    >
+                      Seller dashboard
+                    </Link>
+                  )}
                   <Link
-                    href="/admin"
+                    href="/dashboard"
                     onClick={() => setOpen(false)}
                     className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
                   >
-                    Admin panel
+                    My account
                   </Link>
-                )}
-                {user.role === "SALES" && (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-lg px-3 py-3 text-left text-base font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                  >
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
                   <Link
-                    href="/seller"
+                    href="/login"
                     onClick={() => setOpen(false)}
                     className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
                   >
-                    Seller dashboard
+                    Log in
                   </Link>
-                )}
-                <Link
-                  href="/dashboard"
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
-                >
-                  My account
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="rounded-lg px-3 py-3 text-left text-base font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
-                >
-                  Log out
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-yellow-50 hover:text-amber-700 dark:text-slate-200 dark:hover:bg-yellow-500/10 dark:hover:text-yellow-400"
-                >
-                  Log in
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+                </>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
