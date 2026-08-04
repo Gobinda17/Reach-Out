@@ -20,11 +20,9 @@ export async function POST(request) {
     return NextResponse.json({ error: "Incorrect or expired code." }, { status: 401 });
   }
 
-  const user = await prisma.user.upsert({
-    where: { phone },
-    update: {},
-    create: { phone },
-  });
+  const existing = await prisma.user.findUnique({ where: { phone } });
+  const user = existing ?? (await prisma.user.create({ data: { phone } }));
+  const isNewUser = !existing;
 
   await createSession(user);
 
@@ -41,5 +39,6 @@ export async function POST(request) {
 
   return NextResponse.json({
     user: { id: user.id, phone: user.phone, name: user.name, role: user.role },
+    isNewUser,
   });
 }

@@ -16,10 +16,10 @@ export function LoginForm() {
   // Only same-site paths — "//evil.com" and absolute URLs would otherwise turn
   // this into an open redirect.
   const requestedNext = searchParams.get("next");
-  const next =
+  const explicitNext =
     requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
       ? requestedNext
-      : "/generate";
+      : null;
 
   const [step, setStep] = useState("phone");
   // PhoneField owns the country + digits state and hands back a composed,
@@ -67,7 +67,11 @@ export function LoginForm() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "Incorrect or expired code.");
-      router.push(next);
+      // An explicit ?next= (set by proxy.js when bouncing an unauthenticated
+      // visitor off a protected route) always wins — that's where they were
+      // actually trying to go. Otherwise send a first-time phone number
+      // straight into getting a tag, and a returning one to their account.
+      router.push(explicitNext ?? (data?.isNewUser ? "/generate" : "/dashboard"));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
