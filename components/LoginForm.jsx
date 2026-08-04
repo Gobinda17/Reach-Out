@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { PHONE_ERROR } from "@/lib/phone";
 import { PhoneField } from "@/components/PhoneField";
 
@@ -11,7 +11,6 @@ const fieldShellClass =
 const fieldClass = `${fieldShellClass} px-3.5 py-2.5`;
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   // Only same-site paths — "//evil.com" and absolute URLs would otherwise turn
   // this into an open redirect.
@@ -71,8 +70,13 @@ export function LoginForm() {
       // visitor off a protected route) always wins — that's where they were
       // actually trying to go. Otherwise send a first-time phone number
       // straight into getting a tag, and a returning one to their account.
-      router.push(explicitNext ?? (data?.isNewUser ? "/generate" : "/dashboard"));
-      router.refresh();
+      //
+      // A hard navigation, not router.push()+refresh(): the session cookie is
+      // already set server-side by this point, and push()+refresh() back to
+      // back race the App Router's navigation against its own cache
+      // invalidation — refresh() can win and re-render /login in place
+      // (updating the now-logged-in header) while the push() gets dropped.
+      window.location.assign(explicitNext ?? (data?.isNewUser ? "/generate" : "/dashboard"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
