@@ -141,9 +141,8 @@ export default async function Home() {
               className="max-w-xl text-4xl font-semibold tracking-tight text-slate-900 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.15s_forwards] motion-reduce:opacity-100 motion-reduce:animate-none sm:text-5xl dark:text-white"
             >
               Let people reach you —{" "}
-              <span className="relative whitespace-nowrap">
-                <span className="relative z-10">without sharing your number</span>
-                <span className="absolute inset-x-0 bottom-1 -z-0 h-3 bg-yellow-300/70 dark:bg-yellow-400/30" aria-hidden />
+              <span className="bg-[linear-gradient(180deg,transparent_65%,rgba(253,224,71,0.7)_65%)] dark:bg-[linear-gradient(180deg,transparent_65%,rgba(250,204,21,0.35)_65%)]">
+                without sharing your number
               </span>
               .
             </h1>

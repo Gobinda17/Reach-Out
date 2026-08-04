@@ -143,20 +143,25 @@ export function DashboardShell({
           </div>
           <button
             type="button"
-            className="pill-btn pill-btn-ghost small footer-wide"
+            className="pill-btn pill-btn-ghost small footer-btn"
             onClick={() => setCompact((v) => !v)}
+            title={compact ? "Comfortable mode" : "Compact mode"}
           >
-            {compact ? "Comfortable mode" : "Compact mode"}
+            <span className="footer-icon" aria-hidden="true">{compact ? "▣" : "▦"}</span>
+            <span className="footer-wide">{compact ? "Comfortable mode" : "Compact mode"}</span>
           </button>
-          <Link href="/" className="pill-btn pill-btn-ghost small footer-wide">
-            ← Back to site
+          <Link href="/" className="pill-btn pill-btn-ghost small footer-btn" title="Back to site">
+            <span className="footer-icon" aria-hidden="true">←</span>
+            <span className="footer-wide">Back to site</span>
           </Link>
           <button
             type="button"
             onClick={handleLogout}
-            className="pill-btn pill-btn-ghost pill-btn-danger small footer-wide"
+            className="pill-btn pill-btn-ghost pill-btn-danger small footer-btn"
+            title="Log out"
           >
-            Log out
+            <span className="footer-icon" aria-hidden="true">⏻</span>
+            <span className="footer-wide">Log out</span>
           </button>
         </div>
       </aside>

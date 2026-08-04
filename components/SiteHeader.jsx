@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
 import { UserMenu } from "./UserMenu";
+import { MobileNav } from "./MobileNav";
 import { getCurrentUser } from "@/lib/dal";
 
 export async function SiteHeader() {
@@ -8,8 +9,8 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-md dark:border-slate-800/70 dark:bg-slate-950/80">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-        <Link href="/">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link href="/" className="shrink-0">
           <Logo />
         </Link>
         <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300 sm:flex">
@@ -26,14 +27,15 @@ export async function SiteHeader() {
             Scan a tag
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link
             href={user ? "/generate" : "/login?next=/generate"}
-            className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black shadow-sm shadow-yellow-500/30 transition-transform hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-md hover:shadow-yellow-500/40"
+            className="rounded-full bg-yellow-400 px-3 py-2 text-xs font-semibold text-black shadow-sm shadow-yellow-500/30 transition-transform hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-md hover:shadow-yellow-500/40 sm:px-4 sm:text-sm"
           >
             {user ? "Get your tag" : "Log in"}
           </Link>
           {user && <UserMenu user={user} />}
+          <MobileNav user={user} />
         </div>
       </div>
     </header>

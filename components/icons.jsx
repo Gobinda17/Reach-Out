@@ -124,6 +124,22 @@ export function ChevronDownIcon({ className }) {
   );
 }
 
+export function MenuIcon({ className }) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4 6.5h16M4 12h16M4 17.5h16" />
+    </svg>
+  );
+}
+
+export function CloseIcon({ className }) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 // Simple generic car-side-view glyph, used for the vehicle tag motif.
 export function CarIcon({ className }) {
   return (

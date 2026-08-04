@@ -243,6 +243,10 @@
   display: none;
 }
 
+.sidebar.collapsed .footer-icon {
+  display: inline-block;
+}
+
 /* Main */
 
 .main {
@@ -358,6 +362,17 @@
 .pill-btn.small {
   padding: 0.2rem 0.6rem;
   font-size: 0.75rem;
+}
+
+.footer-btn {
+  justify-content: flex-start;
+}
+
+.footer-icon {
+  display: none;
+  width: 18px;
+  flex-shrink: 0;
+  text-align: center;
 }
 
 .pill-btn:hover {
@@ -1026,9 +1041,24 @@
   .sidebar .footer-wide {
     display: none;
   }
+  .sidebar .footer-icon {
+    display: inline-block;
+  }
   .sidebar .nav-label {
     opacity: 0;
     height: 0.9rem;
     overflow: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  .avatar-meta {
+    display: none;
+  }
+  .content {
+    padding: 0.25rem 0.75rem 0.75rem;
+  }
+  .topbar {
+    padding: 0.75rem 0.75rem 0.4rem;
   }
 }
