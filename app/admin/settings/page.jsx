@@ -1,6 +1,15 @@
 import { getSettings } from "@/lib/settings";
 import { CALL_PROVIDERS } from "@/lib/calling";
+import { CONTACT_REASONS } from "@/lib/contactReasons";
 import { SettingsForm } from "@/components/admin/SettingsForm";
+
+// One WHATSAPP_TEMPLATE_<REASON> key per predefined contact reason, plus
+// WHATSAPP_TEMPLATE_CUSTOM for a freely typed message with no reason picked
+// — see lib/whatsapp.js's templateSettingKey().
+const WHATSAPP_TEMPLATE_KEYS = [
+  ...CONTACT_REASONS.map((r) => `WHATSAPP_TEMPLATE_${r.key.toUpperCase().replace(/-/g, "_")}`),
+  "WHATSAPP_TEMPLATE_CUSTOM",
+];
 
 const KEYS = [
   "CALL_PROVIDER",
@@ -12,6 +21,12 @@ const KEYS = [
   "RAZORPAY_KEY_ID",
   "RAZORPAY_KEY_SECRET",
   "RAZORPAY_WEBHOOK_SECRET",
+  "WHATSAPP_ACCESS_TOKEN",
+  "WHATSAPP_PHONE_NUMBER_ID",
+  "WHATSAPP_VERIFY_TOKEN",
+  "WHATSAPP_APP_SECRET",
+  "WHATSAPP_TEMPLATE_LANG",
+  ...WHATSAPP_TEMPLATE_KEYS,
 ];
 
 export default async function AdminSettingsPage() {
@@ -32,9 +47,22 @@ export default async function AdminSettingsPage() {
     ),
     otpDevModeOn: (values.OTP_DEV_MODE ?? process.env.OTP_DEV_MODE) === "true",
     razorpayDevModeOn: (values.RAZORPAY_DEV_MODE ?? process.env.RAZORPAY_DEV_MODE) === "true",
+    WHATSAPP_ACCESS_TOKEN: Boolean(values.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN),
+    WHATSAPP_VERIFY_TOKEN: Boolean(values.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN),
+    WHATSAPP_APP_SECRET: Boolean(values.WHATSAPP_APP_SECRET || process.env.WHATSAPP_APP_SECRET),
   };
   const callProvider = values.CALL_PROVIDER || process.env.CALL_PROVIDER || "dev";
   const callmaskNumbers = values.CALLMASK_NUMBERS || process.env.CALLMASK_NUMBERS || "";
+  const whatsappPhoneNumberId =
+    values.WHATSAPP_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+  const whatsappTemplateLang =
+    values.WHATSAPP_TEMPLATE_LANG || process.env.WHATSAPP_TEMPLATE_LANG || "en_US";
+  const whatsappTemplates = Object.fromEntries(
+    [...CONTACT_REASONS.map((r) => r.key), "custom"].map((key) => {
+      const settingKey = `WHATSAPP_TEMPLATE_${key.toUpperCase().replace(/-/g, "_")}`;
+      return [key, values[settingKey] || process.env[settingKey] || ""];
+    })
+  );
 
   return (
     <article className="card">
@@ -53,6 +81,10 @@ export default async function AdminSettingsPage() {
         callProviders={CALL_PROVIDERS}
         callProvider={callProvider}
         callmaskNumbers={callmaskNumbers}
+        contactReasons={CONTACT_REASONS}
+        whatsappPhoneNumberId={whatsappPhoneNumberId}
+        whatsappTemplateLang={whatsappTemplateLang}
+        whatsappTemplates={whatsappTemplates}
         saved={saved}
       />
     </article>

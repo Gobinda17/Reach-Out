@@ -6,6 +6,7 @@ import { checkMessageRateLimit, MessageRateLimitError } from "@/lib/callRateLimi
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { checkPlateGate } from "@/lib/plateGate";
 import { isValidReason, reasonLabel } from "@/lib/contactReasons";
+import { sendScanNotification } from "@/lib/whatsapp";
 
 const MAX_MESSAGE_LENGTH = 1000;
 const MAX_NAME_LENGTH = 100;
@@ -55,7 +56,7 @@ export async function POST(request, { params }) {
 
   const tag = await prisma.tag.findUnique({
     where: { code: upperCode },
-    select: { id: true, createdById: true, vehicleReg: true },
+    select: { id: true, createdById: true, vehicleReg: true, phone: true },
   });
   if (!tag) {
     return NextResponse.json({ error: "Tag not found" }, { status: 404 });
@@ -92,6 +93,16 @@ export async function POST(request, { params }) {
       fromUserId: user?.id ?? null,
     },
   });
+
+  // Best-effort: the message is already saved and visible on the owner's
+  // dashboard regardless of whether this notification goes through.
+  if (tag.phone) {
+    try {
+      await sendScanNotification({ to: tag.phone, reasonKey: reason, tagCode: upperCode, message });
+    } catch (err) {
+      console.error(`[whatsapp] notify failed for tag ${upperCode}:`, err);
+    }
+  }
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

@@ -6,7 +6,16 @@ import { updateSettings } from "@/app/admin/actions";
 // `saved` flags which secret fields already have a value in the DB or env —
 // their inputs stay blank (never echo a real secret back to the browser) and
 // show a "saved, leave blank to keep it" placeholder instead.
-export function SettingsForm({ callProviders, callProvider, callmaskNumbers, saved }) {
+export function SettingsForm({
+  callProviders,
+  callProvider,
+  callmaskNumbers,
+  contactReasons,
+  whatsappPhoneNumberId,
+  whatsappTemplateLang,
+  whatsappTemplates,
+  saved,
+}) {
   const [state, formAction, pending] = useActionState(updateSettings, null);
 
   return (
@@ -130,6 +139,108 @@ export function SettingsForm({ callProviders, callProvider, callmaskNumbers, sav
           Dashboard&apos;s Webhooks section (for the <code>payment.captured</code> and{" "}
           <code>order.paid</code> events), and paste the secret it gives you here — it&apos;s
           separate from the API key/secret above.
+        </p>
+      </fieldset>
+
+      <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+        <h3 style={{ marginBottom: "0.5rem" }}>WhatsApp notifications</h3>
+        <p className="kpi-sub" style={{ marginBottom: "0.75rem" }}>
+          Notifies a tag owner over WhatsApp when someone scans their tag and leaves a message.
+          Uses Meta&apos;s WhatsApp Business Cloud API — the phone number ID and token come from
+          your app in Meta&apos;s developer dashboard.
+        </p>
+        <div className="form-grid">
+          <label className="field">
+            <span>
+              Access token {saved.WHATSAPP_ACCESS_TOKEN && "(saved — leave blank to keep it)"}
+            </span>
+            <input
+              name="whatsappAccessToken"
+              type="password"
+              placeholder={saved.WHATSAPP_ACCESS_TOKEN ? "•••••••••••••••• (unchanged)" : "EAAG..."}
+              autoComplete="off"
+            />
+          </label>
+          <label className="field">
+            <span>Phone number ID</span>
+            <input
+              name="whatsappPhoneNumberId"
+              type="text"
+              defaultValue={whatsappPhoneNumberId}
+              placeholder="1234567890"
+              autoComplete="off"
+            />
+          </label>
+          <label className="field">
+            <span>
+              Webhook verify token{" "}
+              {saved.WHATSAPP_VERIFY_TOKEN && "(saved — leave blank to keep it)"}
+            </span>
+            <input
+              name="whatsappVerifyToken"
+              type="password"
+              placeholder={saved.WHATSAPP_VERIFY_TOKEN ? "•••••••••••••••• (unchanged)" : "choose any string"}
+              autoComplete="off"
+            />
+          </label>
+          <label className="field">
+            <span>
+              App secret (webhook signing){" "}
+              {saved.WHATSAPP_APP_SECRET && "(saved — leave blank to keep it)"}
+            </span>
+            <input
+              name="whatsappAppSecret"
+              type="password"
+              placeholder={saved.WHATSAPP_APP_SECRET ? "•••••••••••••••• (unchanged)" : "optional"}
+              autoComplete="off"
+            />
+          </label>
+          <label className="field">
+            <span>Template language code</span>
+            <input
+              name="whatsappTemplateLang"
+              type="text"
+              defaultValue={whatsappTemplateLang}
+              placeholder="en_US"
+              autoComplete="off"
+            />
+          </label>
+        </div>
+        <p className="kpi-sub" style={{ marginTop: "1rem", marginBottom: "0.5rem" }}>
+          Approved template name per contact reason — each must already exist and be approved in
+          Meta&apos;s dashboard. Every template takes two body variables in order: the tag code,
+          then the message text.
+        </p>
+        <div className="form-grid">
+          {contactReasons.map((reason) => (
+            <label className="field" key={reason.key}>
+              <span>
+                {reason.icon} {reason.label}
+              </span>
+              <input
+                name={`whatsappTemplate_${reason.key}`}
+                type="text"
+                defaultValue={whatsappTemplates[reason.key]}
+                placeholder={`reachout_notify_${reason.key.replace(/-/g, "_")}`}
+                autoComplete="off"
+              />
+            </label>
+          ))}
+          <label className="field">
+            <span>Custom (no reason picked)</span>
+            <input
+              name="whatsappTemplate_custom"
+              type="text"
+              defaultValue={whatsappTemplates.custom}
+              placeholder="reachout_notify_custom"
+              autoComplete="off"
+            />
+          </label>
+        </div>
+        <p className="kpi-sub" style={{ marginTop: "0.5rem" }}>
+          Configure <code>/api/webhooks/whatsapp</code> as the Callback URL in the app
+          dashboard&apos;s &quot;Configure Webhooks&quot; screen, and paste the same verify token
+          you set above.
         </p>
       </fieldset>
 

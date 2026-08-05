@@ -10,6 +10,7 @@ import { isBlankAddress } from "@/lib/customer";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { setSetting } from "@/lib/settings";
 import { CALL_PROVIDERS } from "@/lib/calling";
+import { CONTACT_REASONS } from "@/lib/contactReasons";
 import { ROLES, ADMIN_ROLES, isAdminRole, isPrivilegedRole } from "@/lib/roles";
 import { recordActivity, changedFields, ACTIVITY } from "@/lib/activityLog";
 
@@ -606,6 +607,34 @@ export async function updateSettings(_prevState, formData) {
   if (razorpayWebhookSecret) {
     await setSetting("RAZORPAY_WEBHOOK_SECRET", razorpayWebhookSecret);
     rotated.push("RAZORPAY_WEBHOOK_SECRET");
+  }
+
+  const whatsappAccessToken = String(formData.get("whatsappAccessToken") ?? "").trim();
+  if (whatsappAccessToken) {
+    await setSetting("WHATSAPP_ACCESS_TOKEN", whatsappAccessToken);
+    rotated.push("WHATSAPP_ACCESS_TOKEN");
+  }
+
+  const whatsappVerifyToken = String(formData.get("whatsappVerifyToken") ?? "").trim();
+  if (whatsappVerifyToken) {
+    await setSetting("WHATSAPP_VERIFY_TOKEN", whatsappVerifyToken);
+    rotated.push("WHATSAPP_VERIFY_TOKEN");
+  }
+
+  const whatsappAppSecret = String(formData.get("whatsappAppSecret") ?? "").trim();
+  if (whatsappAppSecret) {
+    await setSetting("WHATSAPP_APP_SECRET", whatsappAppSecret);
+    rotated.push("WHATSAPP_APP_SECRET");
+  }
+
+  // Not secrets, so (unlike the fields above) these always overwrite —
+  // submitting one blank means "unset", not "leave unchanged".
+  await setSetting("WHATSAPP_PHONE_NUMBER_ID", String(formData.get("whatsappPhoneNumberId") ?? "").trim());
+  await setSetting("WHATSAPP_TEMPLATE_LANG", String(formData.get("whatsappTemplateLang") ?? "").trim() || "en_US");
+
+  for (const reasonKey of [...CONTACT_REASONS.map((r) => r.key), "custom"]) {
+    const settingKey = `WHATSAPP_TEMPLATE_${reasonKey.toUpperCase().replace(/-/g, "_")}`;
+    await setSetting(settingKey, String(formData.get(`whatsappTemplate_${reasonKey}`) ?? "").trim());
   }
 
   await recordActivity(admin, ACTIVITY.SETTINGS_UPDATE, {
