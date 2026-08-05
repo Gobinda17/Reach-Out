@@ -160,7 +160,12 @@ export default function PrivacyPolicyPage() {
         <h2 className={h2}>Your choices</h2>
         <ul className={ul}>
           <li>Update your tag&apos;s details any time from your dashboard</li>
-          <li>Ask us to export or delete your personal data by contacting us below</li>
+          <li>
+            Ask us to export or delete your personal data — see our{" "}
+            <Link href="/data-deletion" className="text-amber-700 underline underline-offset-2 hover:text-amber-800 dark:text-yellow-400 dark:hover:text-yellow-300">
+              Data Deletion Instructions
+            </Link>
+          </li>
           <li>Stop a physical tag from working at all by asking us to deactivate it</li>
         </ul>
 

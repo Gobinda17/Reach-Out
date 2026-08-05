@@ -40,6 +40,9 @@ export function SiteFooter() {
           <Link href="/terms" className="text-slate-500 transition-colors hover:text-amber-600 dark:text-slate-400 dark:hover:text-yellow-400">
             Terms of Service
           </Link>
+          <Link href="/data-deletion" className="text-slate-500 transition-colors hover:text-amber-600 dark:text-slate-400 dark:hover:text-yellow-400">
+            Data Deletion
+          </Link>
         </div>
       </div>
       <div className="mx-auto w-full max-w-6xl border-t border-slate-100 px-6 py-6 text-xs text-slate-400 dark:border-slate-900">
