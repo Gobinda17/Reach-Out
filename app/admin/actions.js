@@ -591,6 +591,12 @@ export async function updateSettings(_prevState, formData) {
   await setSetting("OTP_DEV_MODE", otpDevMode);
   await setSetting("RAZORPAY_DEV_MODE", razorpayDevMode);
 
+  await setSetting("WHATSAPP_OTP_TEMPLATE", String(formData.get("whatsappOtpTemplate") ?? "").trim());
+  await setSetting(
+    "WHATSAPP_OTP_TEMPLATE_LANG",
+    String(formData.get("whatsappOtpTemplateLang") ?? "").trim() || "en"
+  );
+
   const razorpayKeyId = String(formData.get("razorpayKeyId") ?? "").trim();
   if (razorpayKeyId) {
     await setSetting("RAZORPAY_KEY_ID", razorpayKeyId);

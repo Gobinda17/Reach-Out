@@ -14,6 +14,8 @@ export function SettingsForm({
   whatsappPhoneNumberId,
   whatsappTemplateLang,
   whatsappTemplates,
+  whatsappOtpTemplate,
+  whatsappOtpTemplateLang,
   saved,
 }) {
   const [state, formAction, pending] = useActionState(updateSettings, null);
@@ -88,13 +90,42 @@ export function SettingsForm({
 
       <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
         <h3 style={{ marginBottom: "0.5rem" }}>OTP</h3>
-        <label className="checkbox-field">
+        <label className="checkbox-field" style={{ marginBottom: "0.75rem" }}>
           <input type="checkbox" name="otpDevMode" defaultChecked={saved.otpDevModeOn} />
           <span>
-            Dev mode — every login code is <code>111111</code> instead of a real SMS. Turn this
+            Dev mode — every login code is <code>111111</code> and nothing real is sent. Turn this
             off before going live.
           </span>
         </label>
+        <div className="form-grid">
+          <label className="field">
+            <span>WhatsApp OTP template name</span>
+            <input
+              name="whatsappOtpTemplate"
+              type="text"
+              defaultValue={whatsappOtpTemplate}
+              placeholder="reachout_qr_otp"
+              autoComplete="off"
+            />
+          </label>
+          <label className="field">
+            <span>WhatsApp OTP template language code</span>
+            <input
+              name="whatsappOtpTemplateLang"
+              type="text"
+              defaultValue={whatsappOtpTemplateLang}
+              placeholder="en"
+              autoComplete="off"
+            />
+          </label>
+        </div>
+        <p className="kpi-sub" style={{ marginTop: "0.5rem" }}>
+          Login codes are delivered over WhatsApp using this Authentication-category template
+          (must already exist and be approved in Meta&apos;s dashboard, with a &quot;Copy
+          code&quot; button — not zero-tap/one-tap, which need a linked native app). Uses the same
+          access token and phone number ID as WhatsApp notifications below. Falls back to logging
+          the code server-side if WhatsApp isn&apos;t configured or the send fails.
+        </p>
       </fieldset>
 
       <fieldset style={{ border: "none", padding: 0, margin: 0 }}>

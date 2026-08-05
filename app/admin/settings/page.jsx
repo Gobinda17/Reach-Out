@@ -27,6 +27,8 @@ const KEYS = [
   "WHATSAPP_APP_SECRET",
   "WHATSAPP_TEMPLATE_LANG",
   ...WHATSAPP_TEMPLATE_KEYS,
+  "WHATSAPP_OTP_TEMPLATE",
+  "WHATSAPP_OTP_TEMPLATE_LANG",
 ];
 
 export default async function AdminSettingsPage() {
@@ -63,6 +65,10 @@ export default async function AdminSettingsPage() {
       return [key, values[settingKey] || process.env[settingKey] || ""];
     })
   );
+  const whatsappOtpTemplate =
+    values.WHATSAPP_OTP_TEMPLATE || process.env.WHATSAPP_OTP_TEMPLATE || "";
+  const whatsappOtpTemplateLang =
+    values.WHATSAPP_OTP_TEMPLATE_LANG || process.env.WHATSAPP_OTP_TEMPLATE_LANG || "en";
 
   return (
     <article className="card">
@@ -85,6 +91,8 @@ export default async function AdminSettingsPage() {
         whatsappPhoneNumberId={whatsappPhoneNumberId}
         whatsappTemplateLang={whatsappTemplateLang}
         whatsappTemplates={whatsappTemplates}
+        whatsappOtpTemplate={whatsappOtpTemplate}
+        whatsappOtpTemplateLang={whatsappOtpTemplateLang}
         saved={saved}
       />
     </article>
