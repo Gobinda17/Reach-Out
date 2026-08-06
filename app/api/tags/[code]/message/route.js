@@ -103,6 +103,7 @@ export async function POST(request, { params }) {
         reasonKey: reason,
         ownerName: tag.name,
         vehicleReg: tag.vehicleReg,
+        note: typed || "No additional note was left.",
       });
     } catch (err) {
       console.error(`[whatsapp] notify failed for tag ${upperCode}:`, err);
