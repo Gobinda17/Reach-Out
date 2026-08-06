@@ -95,14 +95,14 @@ export function LoginForm() {
           <PhoneField required onChange={setFullPhone} className={fieldShellClass} />
           <span className="text-xs text-slate-500 dark:text-slate-400">
             {fullPhone
-              ? `We'll text ${fullPhone}.`
-              : "Pick your country, then enter your mobile number."}
+              ? `We'll send your code on WhatsApp to ${fullPhone}.`
+              : "Enter your WhatsApp number — the code is sent there, not by SMS."}
           </span>
         </label>
       ) : (
         <>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Enter the 6-digit code we sent to{" "}
+            Enter the 6-digit code we sent on WhatsApp to{" "}
             <span className="font-medium text-slate-700 dark:text-slate-300">{fullPhone}</span>.
           </p>
           <label className="flex flex-col gap-1.5 text-sm">

@@ -102,13 +102,15 @@ export function PhoneChangeForm({ currentPhone }) {
           <span className="font-medium text-slate-700 dark:text-slate-300">New phone number</span>
           <PhoneField value={fullPhone} onChange={setFullPhone} required className={fieldShellClass} />
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            {fullPhone ? `We'll text a code to ${fullPhone}.` : "Enter your new 10-digit number."}
+            {fullPhone
+              ? `We'll send a WhatsApp code to ${fullPhone}.`
+              : "Enter your new WhatsApp number — the code is sent there, not by SMS."}
           </span>
         </label>
       ) : (
         <>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Enter the 6-digit code we sent to{" "}
+            Enter the 6-digit code we sent on WhatsApp to{" "}
             <span className="font-medium text-slate-700 dark:text-slate-300">{fullPhone}</span>.
           </p>
           <label className="flex flex-col gap-1.5 text-sm">
