@@ -56,7 +56,7 @@ export async function POST(request, { params }) {
 
   const tag = await prisma.tag.findUnique({
     where: { code: upperCode },
-    select: { id: true, createdById: true, vehicleReg: true, phone: true },
+    select: { id: true, createdById: true, vehicleReg: true, phone: true, name: true },
   });
   if (!tag) {
     return NextResponse.json({ error: "Tag not found" }, { status: 404 });
@@ -98,7 +98,12 @@ export async function POST(request, { params }) {
   // dashboard regardless of whether this notification goes through.
   if (tag.phone) {
     try {
-      await sendScanNotification({ to: tag.phone, reasonKey: reason, tagCode: upperCode, message });
+      await sendScanNotification({
+        to: tag.phone,
+        reasonKey: reason,
+        ownerName: tag.name,
+        vehicleReg: tag.vehicleReg,
+      });
     } catch (err) {
       console.error(`[whatsapp] notify failed for tag ${upperCode}:`, err);
     }
