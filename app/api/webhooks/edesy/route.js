@@ -14,6 +14,12 @@ import { last10Digits } from "@/lib/phone";
 // itself. This webhook is what actually resolves a live call to a real
 // target, by matching the incoming caller against the Call row's stored
 // callerPhone / the tag's owner phone.
+//
+// edesy can put more than one live call on the same DID at once, so a
+// masked number can have several active Call rows at the same time — we
+// can't just grab the newest one. Instead we walk the candidates (newest
+// first, as a tiebreak) and pick the one whose booked caller or tag owner
+// actually matches who's calling right now.
 export async function POST(request) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-edesy-signature");
@@ -36,29 +42,35 @@ export async function POST(request) {
     return NextResponse.json({ action: "reject", reject_reason: "invalid_request" });
   }
 
-  // Most recent non-expired allocation for this masked number — numbers get
-  // reused across calls, so this can't just be a unique lookup.
-  const call = await prisma.call.findFirst({
+  // All non-expired allocations for this masked number — a DID can carry
+  // more than one live call at once, so this can't be a single-row lookup.
+  const candidates = await prisma.call.findMany({
     where: { virtualNumber: { endsWith: maskedLast10 }, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: "desc" },
     select: { id: true, callerPhone: true, tag: { select: { phone: true } } },
   });
 
-  if (!call || !call.callerPhone || !call.tag?.phone) {
-    return NextResponse.json({ action: "reject", reject_reason: "not available" });
-  }
-
-  const ownerLast10 = last10Digits(call.tag.phone);
-  const bookedCallerLast10 = last10Digits(call.callerPhone);
-
+  let call = null;
   let targetNumber = null;
-  if (callerLast10 === bookedCallerLast10) {
-    targetNumber = ownerLast10;
-  } else if (callerLast10 === ownerLast10) {
-    targetNumber = bookedCallerLast10;
+  for (const candidate of candidates) {
+    if (!candidate.callerPhone || !candidate.tag?.phone) continue;
+
+    const ownerLast10 = last10Digits(candidate.tag.phone);
+    const bookedCallerLast10 = last10Digits(candidate.callerPhone);
+
+    if (callerLast10 === bookedCallerLast10) {
+      call = candidate;
+      targetNumber = ownerLast10;
+      break;
+    }
+    if (callerLast10 === ownerLast10) {
+      call = candidate;
+      targetNumber = bookedCallerLast10;
+      break;
+    }
   }
 
-  if (!targetNumber) {
+  if (!call || !targetNumber) {
     return NextResponse.json({ action: "reject", reject_reason: "caller_mismatch" });
   }
 

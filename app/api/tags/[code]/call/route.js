@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
 import { allocateVirtualNumber, CallProviderError, callProviderIsDev } from "@/lib/calling";
-import { checkCallRateLimit, CallRateLimitError } from "@/lib/callRateLimit";
+import {
+  checkCallRateLimit,
+  CallRateLimitError,
+  checkCallSpamGuard,
+  CallInProgressError,
+  CallCooldownError,
+} from "@/lib/callRateLimit";
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { verifyScanToken } from "@/lib/scanToken";
 import { checkPlateGate } from "@/lib/plateGate";
@@ -61,6 +67,15 @@ export async function POST(request, { params }) {
     checkCallRateLimit(upperCode);
   } catch (err) {
     if (err instanceof CallRateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
+    throw err;
+  }
+
+  try {
+    await checkCallSpamGuard(tag.id);
+  } catch (err) {
+    if (err instanceof CallInProgressError || err instanceof CallCooldownError) {
       return NextResponse.json({ error: err.message }, { status: 429 });
     }
     throw err;
