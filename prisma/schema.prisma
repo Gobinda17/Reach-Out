@@ -32,6 +32,11 @@ model User {
   id        Int      @id @default(autoincrement())
   phone     String   @unique
   name      String?
+  // Optional number the "Emergency" contact route rings instead of the
+  // owner's normal tag phone — set from the account page, never shown to
+  // whoever scanned the tag. Falls back to the tag's own phone when unset;
+  // see the "Emergency" resolution in app/api/tags/[code]/call/route.js.
+  emergencyPhone String?
   role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -277,6 +282,12 @@ model Call {
   provider       String
   virtualNumber  String
   callerPhone    String?
+  // Resolved once at allocation time: the tag owner's emergencyPhone when
+  // `reason` is "emergency" and one is set, otherwise the tag's normal
+  // phone — see app/api/tags/[code]/call/route.js. Nullable only so older
+  // rows (created before this column existed) fall back to tag.phone at
+  // routing time; every call created from now on always sets it.
+  targetPhone    String?
   providerCallId String?
   status         String   @default("allocated")
   expiresAt      DateTime

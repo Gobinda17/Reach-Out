@@ -12,7 +12,7 @@ import {
 import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { verifyScanToken } from "@/lib/scanToken";
 import { checkPlateGate } from "@/lib/plateGate";
-import { isValidReason } from "@/lib/contactReasons";
+import { isValidReason, isEmergencyReason } from "@/lib/contactReasons";
 
 export async function POST(request, { params }) {
   const { code } = await params;
@@ -20,7 +20,13 @@ export async function POST(request, { params }) {
 
   const tag = await prisma.tag.findUnique({
     where: { code: upperCode },
-    select: { id: true, createdById: true, phone: true, vehicleReg: true },
+    select: {
+      id: true,
+      createdById: true,
+      phone: true,
+      vehicleReg: true,
+      createdBy: { select: { emergencyPhone: true } },
+    },
   });
   if (!tag) {
     return NextResponse.json({ error: "Tag not found" }, { status: 404 });
@@ -83,15 +89,24 @@ export async function POST(request, { params }) {
 
   try {
     const { provider, virtualNumber, providerCallId, expiresAt } = await allocateVirtualNumber();
+    const reason = isValidReason(body?.reason) ? body.reason : null;
+    // The owner's emergencyPhone only overrides routing for the dedicated
+    // Emergency button, and only when they've actually set one — otherwise
+    // this is identical to every other reason and rings their normal number.
+    const targetPhone =
+      isEmergencyReason(reason) && tag.createdBy?.emergencyPhone
+        ? tag.createdBy.emergencyPhone
+        : tag.phone;
 
     const call = await prisma.call.create({
       data: {
         tagId: tag.id,
         initiatedById: user?.id ?? null,
-        reason: isValidReason(body?.reason) ? body.reason : null,
+        reason,
         provider,
         virtualNumber,
         callerPhone,
+        targetPhone,
         providerCallId,
         expiresAt,
       },

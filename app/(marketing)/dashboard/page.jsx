@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { productNameMap } from "@/lib/catalogue";
 import { PhoneChangeForm } from "@/components/PhoneChangeForm";
 import { NameEditForm } from "@/components/NameEditForm";
+import { EmergencyPhoneForm } from "@/components/EmergencyPhoneForm";
 import { DownloadTagButton } from "@/components/DownloadTagButton";
 import { PaymentsTable } from "@/components/PaymentsTable";
 import { UserIcon, TagIcon, ChatIcon, QrIcon, CameraIcon, PhoneIcon } from "@/components/icons";
@@ -111,6 +112,9 @@ export default async function DashboardPage() {
             </div>
             <div className="pt-4">
               <PhoneChangeForm currentPhone={session.phone} />
+            </div>
+            <div className="pt-4">
+              <EmergencyPhoneForm currentPhone={user?.emergencyPhone} />
             </div>
           </div>
         </Section>

@@ -47,15 +47,19 @@ export async function POST(request) {
   const candidates = await prisma.call.findMany({
     where: { virtualNumber: { endsWith: maskedLast10 }, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: "desc" },
-    select: { id: true, callerPhone: true, tag: { select: { phone: true } } },
+    select: { id: true, callerPhone: true, targetPhone: true, tag: { select: { phone: true } } },
   });
 
   let call = null;
   let targetNumber = null;
   for (const candidate of candidates) {
-    if (!candidate.callerPhone || !candidate.tag?.phone) continue;
+    // targetPhone is set on every call created after it was added (either
+    // the owner's normal number or, for an Emergency call, their
+    // emergencyPhone) — tag.phone is only a fallback for older rows.
+    const ownerNumber = candidate.targetPhone || candidate.tag?.phone;
+    if (!candidate.callerPhone || !ownerNumber) continue;
 
-    const ownerLast10 = last10Digits(candidate.tag.phone);
+    const ownerLast10 = last10Digits(ownerNumber);
     const bookedCallerLast10 = last10Digits(candidate.callerPhone);
 
     if (callerLast10 === bookedCallerLast10) {
