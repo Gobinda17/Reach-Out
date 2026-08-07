@@ -22,7 +22,14 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* suppressHydrationWarning covers this element's own attributes only,
+          not its children: browser extensions (ColorZilla's
+          cz-shortcut-listen, password managers, Grammarly) commonly stamp
+          attributes onto <body> before React hydrates, and there's nothing to
+          fix on our side when they do. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

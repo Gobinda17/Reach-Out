@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { verifySession, getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
-import { productNameMap } from "@/lib/catalogue";
+import { productNameMap, freeProductSlugs } from "@/lib/catalogue";
 import { PhoneChangeForm } from "@/components/PhoneChangeForm";
 import { NameEditForm } from "@/components/NameEditForm";
 import { EmergencyPhoneForm } from "@/components/EmergencyPhoneForm";
@@ -71,6 +71,11 @@ export default async function DashboardPage() {
     productNameMap(),
   ]);
 
+  // Emergency routing only applies to paid tags (see the call endpoint), so
+  // there's nothing to set until the account owns one.
+  const freeSlugs = await freeProductSlugs();
+  const hasPaidTag = tags.some((tag) => !freeSlugs.has(tag.product));
+
   const hdrs = await headers();
   const host = hdrs.get("host") ?? "localhost:3000";
   const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
@@ -114,7 +119,7 @@ export default async function DashboardPage() {
               <PhoneChangeForm currentPhone={session.phone} />
             </div>
             <div className="pt-4">
-              <EmergencyPhoneForm currentPhone={user?.emergencyPhone} />
+              <EmergencyPhoneForm currentPhone={user?.emergencyPhone} available={hasPaidTag} />
             </div>
           </div>
         </Section>

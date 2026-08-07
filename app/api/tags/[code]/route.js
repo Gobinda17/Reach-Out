@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/dal";
 import { createScanToken } from "@/lib/scanToken";
 import { maskPlate, platePrefix, plateIsVerifiable } from "@/lib/plate";
-import { ETAG_PRODUCT_SLUG } from "@/lib/etagShared";
+import { productIsFree } from "@/lib/catalogue";
 
 export async function GET(_request, { params }) {
   const { code } = await params;
@@ -40,7 +40,7 @@ export async function GET(_request, { params }) {
     maskedPlate: maskPlate(tag.vehicleReg),
     platePrefix: platePrefix(tag.vehicleReg),
     needsPlate: plateIsVerifiable(tag.vehicleReg),
-    isFree: tag.product === ETAG_PRODUCT_SLUG,
+    isFree: await productIsFree(tag.product),
     claimed: tag.createdById !== null,
     scanToken: await createScanToken(upperCode),
   });

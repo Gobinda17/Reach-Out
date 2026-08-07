@@ -10,7 +10,12 @@ const fieldShellClass =
 // Not OTP-gated like PhoneChangeForm — this number is never used to log in,
 // just as where the scan page's "Emergency" button rings instead of the tag's
 // normal contact number (see app/api/tags/[code]/call/route.js).
-export function EmergencyPhoneForm({ currentPhone }) {
+//
+// `available` is false when the account owns no paid tag: the Emergency button
+// never appears on a free tag, so a number set here would never be rung. The
+// gate that matters is the call endpoint's — this only keeps the profile from
+// offering a setting that would do nothing.
+export function EmergencyPhoneForm({ currentPhone, available = true }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [phone, setPhone] = useState(currentPhone ?? "");
@@ -44,6 +49,21 @@ export function EmergencyPhoneForm({ currentPhone }) {
     }
   }
 
+  if (!available) {
+    return (
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Emergency contact number
+        </p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{currentPhone || "Not set"}</p>
+        <p className="text-xs text-slate-400">
+          Paid tags only — a free tag doesn&apos;t show the &quot;Emergency&quot; option, so this
+          number wouldn&apos;t be used.
+        </p>
+      </div>
+    );
+  }
+
   if (!editing) {
     return (
       <div className="flex items-center justify-between gap-4">
@@ -73,8 +93,9 @@ export function EmergencyPhoneForm({ currentPhone }) {
         <span className="font-medium text-slate-700 dark:text-slate-300">Emergency contact number</span>
         <PhoneField value={phone} onChange={setPhone} className={fieldShellClass} />
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          When someone taps &quot;Emergency&quot; on your tag, the masked call rings this number
-          instead of your usual one. Leave blank to keep using your normal number.
+          When someone taps &quot;Emergency&quot; on one of your paid tags, the masked call rings
+          this number instead of your usual one. Leave blank to keep using your normal number.
+          Free tags don&apos;t offer the Emergency option.
         </span>
       </label>
 

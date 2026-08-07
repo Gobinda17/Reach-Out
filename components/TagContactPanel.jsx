@@ -111,7 +111,8 @@ export function TagContactPanel({ code, scanToken, maskedPlate, platePrefix, nee
 
         {isFree && (
           <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
-            ⓘ Free tag — some limitations apply.
+            ⓘ Free tag — some limitations apply. The Emergency option isn&apos;t available on this
+            tag.
           </p>
         )}
       </div>
@@ -168,19 +169,24 @@ export function TagContactPanel({ code, scanToken, maskedPlate, platePrefix, nee
         Spam may get your number blocked for up to 6 months.
       </p>
 
-      {EMERGENCY && (
-        <button
-          type="button"
-          onClick={() => open("call", EMERGENCY.key)}
-          className="rounded-xl border border-rose-300 bg-white px-4 py-3.5 font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/40 dark:bg-slate-900 dark:text-rose-400"
-        >
-          {EMERGENCY.icon} Emergency
-        </button>
+      {/* Emergency routing (the owner's alternate ring target) is a paid-tag
+          feature, so a free tag doesn't offer the button at all — the call
+          endpoint rejects the reason for one either way. */}
+      {EMERGENCY && !isFree && (
+        <>
+          <button
+            type="button"
+            onClick={() => open("call", EMERGENCY.key)}
+            className="rounded-xl border border-rose-300 bg-white px-4 py-3.5 font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/40 dark:bg-slate-900 dark:text-rose-400"
+          >
+            {EMERGENCY.icon} Emergency
+          </button>
+          <p className="text-center text-xs text-slate-400">
+            Emergency reaches the owner through the same masked call — it does not contact
+            emergency services.
+          </p>
+        </>
       )}
-      <p className="text-center text-xs text-slate-400">
-        Emergency reaches the owner through the same masked call — it does not contact emergency
-        services.
-      </p>
 
       {error && !dialog && <p className="text-sm text-rose-500">{error}</p>}
 

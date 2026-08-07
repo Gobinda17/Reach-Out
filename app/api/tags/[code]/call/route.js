@@ -13,6 +13,7 @@ import { normalizePhone, PHONE_ERROR } from "@/lib/phone";
 import { verifyScanToken } from "@/lib/scanToken";
 import { checkPlateGate } from "@/lib/plateGate";
 import { isValidReason, isEmergencyReason } from "@/lib/contactReasons";
+import { productIsFree } from "@/lib/catalogue";
 
 export async function POST(request, { params }) {
   const { code } = await params;
@@ -24,6 +25,7 @@ export async function POST(request, { params }) {
       id: true,
       createdById: true,
       phone: true,
+      product: true,
       vehicleReg: true,
       createdBy: { select: { emergencyPhone: true } },
     },
@@ -69,6 +71,19 @@ export async function POST(request, { params }) {
   const gate = checkPlateGate(upperCode, tag.vehicleReg, body?.plateLast4);
   if (gate) return gate;
 
+  const reason = isValidReason(body?.reason) ? body.reason : null;
+
+  // Emergency routing is a paid-tag feature: the contact card hides the button
+  // on a free tag (components/TagContactPanel.jsx), and this is the same rule
+  // on the server, since that card is not the only way to reach this endpoint.
+  // Checked before allocating, so a rejected call doesn't burn a pooled number.
+  if (isEmergencyReason(reason) && (await productIsFree(tag.product))) {
+    return NextResponse.json(
+      { error: "The Emergency option isn't available on a free tag." },
+      { status: 400 }
+    );
+  }
+
   try {
     checkCallRateLimit(upperCode);
   } catch (err) {
@@ -89,7 +104,6 @@ export async function POST(request, { params }) {
 
   try {
     const { provider, virtualNumber, providerCallId, expiresAt } = await allocateVirtualNumber();
-    const reason = isValidReason(body?.reason) ? body.reason : null;
     // The owner's emergencyPhone only overrides routing for the dedicated
     // Emergency button, and only when they've actually set one — otherwise
     // this is identical to every other reason and rings their normal number.

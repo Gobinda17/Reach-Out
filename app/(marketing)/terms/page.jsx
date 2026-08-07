@@ -64,7 +64,9 @@ export default function TermsPage() {
         <h3 className={h3}>Free tags</h3>
         <p className={p}>
           Some tags are issued free of charge, as a digital tag only — no delivery address is
-          required and nothing is shipped.
+          required and nothing is shipped. Free tags do not offer the &quot;Emergency&quot; contact
+          option described in section 6; calls and messages reach the owner&apos;s normal contact
+          number.
         </p>
 
         <h3 className={h3}>Paid tags and shipping</h3>

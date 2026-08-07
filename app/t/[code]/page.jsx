@@ -8,7 +8,7 @@ import { TagContactPanel } from "@/components/TagContactPanel";
 import { ScanBeacon } from "@/components/ScanBeacon";
 import { HideCodeFromAddressBar } from "@/components/HideCodeFromAddressBar";
 import { maskPlate, platePrefix, plateIsVerifiable } from "@/lib/plate";
-import { ETAG_PRODUCT_SLUG } from "@/lib/etagShared";
+import { productIsFree } from "@/lib/catalogue";
 
 export default async function TagPage({ params }) {
   const { code } = await params;
@@ -93,7 +93,7 @@ export default async function TagPage({ params }) {
             maskedPlate={maskedPlate}
             platePrefix={platePrefix(tag.vehicleReg)}
             needsPlate={needsPlate}
-            isFree={tag.product === ETAG_PRODUCT_SLUG}
+            isFree={await productIsFree(tag.product)}
           />
         )}
 
