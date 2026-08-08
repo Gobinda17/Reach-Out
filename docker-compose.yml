@@ -37,7 +37,7 @@ services:
       # service rather than a localhost that doesn't exist inside it.
       DATABASE_URL: postgresql://reachout:reachout@db:5432/reachout?schema=public
     ports:
-      - "3000:3000"
+      - "0.0.0.0:5001:3000"
 
 volumes:
   db-data:
