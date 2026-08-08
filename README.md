@@ -44,6 +44,19 @@ There is no test suite configured in this repo.
 
 **Windows:** `npx prisma generate` fails with `EPERM ... query_engine-windows.dll.node` if the dev server is currently running (it holds the DLL open). Stop the dev server, run `prisma generate`, then restart it.
 
+## Docker
+
+```bash
+docker compose up --build
+```
+
+Runs the app alongside its own PostgreSQL container and applies migrations on boot. Secrets still come from your `.env` — it's read via `env_file`, not baked into the image (see `docker-compose.yml`). Point `DATABASE_URL` in `.env` at the `db` service:
+```
+DATABASE_URL="postgresql://reachout:reachout@db:5432/reachout?schema=public"
+```
+
+To build and run the image standalone instead: `docker build -t reach-out . && docker run --env-file .env -p 3000:3000 reach-out`.
+
 ## Learn more
 
 - [Next.js Documentation](https://nextjs.org/docs)
